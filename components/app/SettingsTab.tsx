@@ -289,10 +289,11 @@ function Ai() {
         <>
           <h3 className="set-sub">La brancher</h3>
           <ol className="steps">
-            <li>Crée une clé sur console.anthropic.com (API Keys → Create Key) et ajoute quelques euros de crédit.</li>
-            <li>Dans Vercel, ouvre le projet finance-flow → Settings → Environment Variables.</li>
-            <li>Ajoute <code>ANTHROPIC_API_KEY</code> avec ta clé, coche Production, enregistre.</li>
-            <li>Onglet Deployments → les trois points du dernier déploiement → Redeploy.</li>
+            <li>Crée un compte gratuit sur console.mistral.ai (email + SMS, pas de carte bancaire) et choisis l&apos;offre gratuite.</li>
+            <li>Dans l&apos;espace Admin, désactive l&apos;utilisation de tes données pour l&apos;entraînement de leurs modèles.</li>
+            <li>Va dans API Keys → Create new key, et copie la clé.</li>
+            <li>Dans Vercel, ouvre le projet finance-flow → Settings → Environment Variables. Ajoute <code>MISTRAL_API_KEY</code> avec ta clé, coche Production, enregistre.</li>
+            <li>Onglet Deployments → les « … » du dernier déploiement → Redeploy.</li>
           </ol>
           <p className="foot">La clé reste sur le serveur : elle n&apos;est jamais dans le code public ni dans ton navigateur.</p>
         </>
