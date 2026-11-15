@@ -10,6 +10,7 @@ import { categorize } from "@/lib/categorize";
 import { configure, HOUSEHOLD_INCOME, INTERNAL } from "@/lib/categories";
 import { summarize, type Shares } from "@/lib/stats";
 import { household, jointLinks, shiftSalary, withVieCommune } from "@/lib/household";
+import { aiStatus, buildContext } from "@/lib/ai";
 import { merchantKey, setShowCents } from "@/lib/text";
 import { DEFAULT_SETTINGS, type Settings } from "@/lib/settings";
 import type { Account, Budgets, ParsedStatement, Rules, Transaction } from "@/lib/types";
@@ -91,6 +92,14 @@ function useAppState(session: Session) {
   }, [rawTxs, commune, links, shiftDay]);
   const months = useMemo(() => [...new Set((txs ?? []).map((t) => t.date.slice(0, 7)))].sort(), [txs]);
   const monthTxs = useMemo(() => (txs ?? []).filter((t) => month && t.date.startsWith(month)), [txs, month]);
+  // IA : disponible si la clé est configurée côté serveur
+  const [aiEnabled, setAiEnabled] = useState(false);
+  useEffect(() => { aiStatus().then(setAiEnabled); }, []);
+  const aiContext = useCallback(
+    () => buildContext({ txs: txs ?? [], months, month: month ?? months[months.length - 1] ?? "", shares, accounts, budgets, settings }),
+    [txs, months, month, shares, accounts, budgets, settings],
+  );
+  const [assistantOpen, setAssistantOpen] = useState(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const home = useMemo(() => household(monthTxs, jointKeys, links.fromMe), [monthTxs, jointKeys, links, version]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -152,25 +161,53 @@ function useAppState(session: Session) {
   }
 
   async function recategorizeTx(tx: Transaction, category: string) {
-    if (!txs) return;
+    if (!rawTxs) return;
     try {
-      const ids = new Set(await recategorize(tx, category, txs));
-      setTxs(txs.map((t) => (ids.has(t.id) ? { ...t, category, manual: true } : t)));
+      const ids = new Set(await recategorize(tx, category, rawTxs));
+      setTxs(rawTxs.map((t) => (ids.has(t.id) ? { ...t, category, manual: true } : t)));
       setRules({ ...rules, [merchantKey(tx.raw)]: category });
       notify(ids.size > 1 ? `${ids.size} opérations « ${tx.label} » rangées dans ${category}. Retenu pour la suite.` : `Rangé dans ${category}. Retenu pour la suite.`);
     } catch (e) { notify("Modification impossible : " + (e as Error).message); }
   }
 
   async function renameTx(tx: Transaction, label: string) {
-    if (!txs || !label.trim()) return;
-    setTxs(txs.map((t) => (t.id === tx.id ? { ...t, label: label.trim() } : t)));
+    if (!rawTxs || !label.trim()) return;
+    setTxs(rawTxs.map((t) => (t.id === tx.id ? { ...t, label: label.trim() } : t)));
     try { await updateTransaction(tx.id, { label: label.trim() }); notify("Libellé modifié"); } catch (e) { notify("Modification impossible : " + (e as Error).message); }
   }
 
   async function deleteTx(tx: Transaction) {
-    if (!txs) return;
-    setTxs(txs.filter((t) => t.id !== tx.id));
+    if (!rawTxs) return;
+    setTxs(rawTxs.filter((t) => t.id !== tx.id));
     try { await deleteTransaction(tx.id); notify("Opération supprimée"); } catch (e) { notify("Suppression impossible : " + (e as Error).message); }
+  }
+
+  /** Applique les catégories proposées par l'IA (une règle par marchand, retenue pour la suite). */
+  async function applySuggestions(choices: { tx: Transaction; category: string }[]) {
+    if (!rawTxs || !choices.length) return;
+    setBusy(true);
+    let list = rawTxs;
+    const learned: Rules = {};
+    const done = new Set<string>();
+    let moved = 0;
+    try {
+      for (const { tx, category } of choices) {
+        const key = merchantKey(tx.raw);
+        if (done.has(key + "|" + (tx.amount > 0))) continue;
+        done.add(key + "|" + (tx.amount > 0));
+        const ids = new Set(await recategorize(tx, category, list));
+        list = list.map((t) => (ids.has(t.id) ? { ...t, category, manual: true } : t));
+        learned[key] = category;
+        moved += ids.size;
+      }
+      notify(`${moved} opération${moved > 1 ? "s" : ""} rangée${moved > 1 ? "s" : ""}. Retenu pour la suite.`);
+    } catch (e) {
+      notify("Tri interrompu : " + (e as Error).message);
+    } finally {
+      setTxs(list);
+      setRules((r) => ({ ...r, ...learned }));
+      setBusy(false);
+    }
   }
 
   async function setBudgetAction(category: string, amount: number | null) {
@@ -237,10 +274,10 @@ function useAppState(session: Session) {
   }
 
   return {
-    session, txs, rules, budgets, accounts, settings, month, setMonth, months, monthTxs, summary, shares, labels, jointKeys, home,
+    session, txs, rules, budgets, accounts, settings, month, setMonth, months, monthTxs, summary, shares, labels, jointKeys, home, aiEnabled, aiContext, assistantOpen, setAssistantOpen,
     queue, toast, busy, error, version, notify, reload, opsPreset, setOpsPreset,
     importFiles, confirmAccount, skipPending, saveAccount: saveAccountAction, deleteAccount: deleteAccountAction,
-    recategorizeTx, renameTx, deleteTx, setBudget: setBudgetAction, applyBudgets, updateSettings, removeRule, changeRule,
+    recategorizeTx, applySuggestions, renameTx, deleteTx, setBudget: setBudgetAction, applyBudgets, updateSettings, removeRule, changeRule,
     resortAll, wipeAll,
   };
 }

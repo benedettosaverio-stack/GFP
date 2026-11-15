@@ -8,6 +8,7 @@ import Indicators from "../Indicators";
 import Coach from "../Coach";
 import { TrendChart } from "../Charts";
 import type { Tab } from "./Shell";
+import Review from "./Review";
 
 const int = (n: number) => Math.round(n).toLocaleString("fr-FR") + " €";
 
@@ -39,6 +40,7 @@ export default function Overview({ go }: { go: (t: Tab) => void }) {
       <div>
         <SummaryCard summary={summary} filter={null} onFilter={onFilter} hasRevolut={hasRevolut} />
         <Indicators summary={summary} />
+        <Review />
         {settings.coach && <Coach items={advice.slice(0, 4)} onApply={app.applyBudgets} />}
       </div>
       <div>

@@ -5,6 +5,7 @@ import { myAmount } from "@/lib/stats";
 import { eur, norm } from "@/lib/text";
 import type { Transaction } from "@/lib/types";
 import { useApp } from "./store";
+import AiSort from "./AiSort";
 
 type Kind = "all" | "expense" | "income" | "savings" | "internal";
 const KINDS: [Kind, string][] = [["all", "Tout"], ["expense", "Dépenses"], ["income", "Rentrées"], ["savings", "Épargne"], ["internal", "Entre mes comptes"]];
@@ -59,6 +60,7 @@ export default function Operations() {
 
   return (
     <div className="ops">
+      <AiSort />
       <div className="filters">
         <input className="search" type="search" placeholder="Rechercher un libellé ou un montant" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="segmented" role="tablist">

@@ -6,13 +6,14 @@ import type { AccountKind } from "@/lib/types";
 import { KIND_LABELS } from "../AccountPicker";
 import { useApp } from "./store";
 
-type Section = "comptes" | "categories" | "tri" | "reperes" | "profil" | "affichage" | "donnees";
+type Section = "comptes" | "categories" | "tri" | "reperes" | "profil" | "ia" | "affichage" | "donnees";
 const SECTIONS: [Section, string, string][] = [
   ["comptes", "Comptes", "Type, part du compte joint, suppression"],
   ["categories", "Catégories", "Couleurs, besoins ou envies, catégories perso"],
   ["tri", "Règles de tri", "Mots-clés et marchands mémorisés"],
   ["reperes", "Objectifs", "Épargne, besoins, envies"],
   ["profil", "Profil bancaire", "Ton nom, ton employeur"],
+  ["ia", "Intelligence artificielle", "Assistant, bilan, tri automatique"],
   ["affichage", "Affichage", "Thème, mode discret, centimes"],
   ["donnees", "Données", "Export, suppression, déconnexion"],
 ];
@@ -35,6 +36,7 @@ export default function SettingsTab() {
         {section === "tri" && <Sorting />}
         {section === "reperes" && <Targets />}
         {section === "profil" && <Profile />}
+        {section === "ia" && <Ai />}
         {section === "affichage" && <Display />}
         {section === "donnees" && <Data />}
       </div>
@@ -272,6 +274,31 @@ function Profile() {
         <input value={salary} placeholder="NOM DE L'EMPLOYEUR" onChange={(e) => setSalary(e.target.value)} onBlur={() => app.updateSettings({ salaryKeywords: split(salary) })} />
         <small>Les virements reçus contenant ce mot sont classés en Salaire.</small>
       </label>
+    </>
+  );
+}
+
+/* ---------------- IA ---------------- */
+function Ai() {
+  const app = useApp();
+  return (
+    <>
+      <H title="Intelligence artificielle">Trois fonctions : le tri des opérations que les règles ratent (onglet Opérations), le bilan du mois (Synthèse) et l&apos;assistant à qui poser tes questions.</H>
+      <p className={`status ${app.aiEnabled ? "on" : ""}`}><i />{app.aiEnabled ? "Branchée et prête" : "Pas encore branchée"}</p>
+      {!app.aiEnabled && (
+        <>
+          <h3 className="set-sub">La brancher</h3>
+          <ol className="steps">
+            <li>Crée une clé sur console.anthropic.com (API Keys → Create Key) et ajoute quelques euros de crédit.</li>
+            <li>Dans Vercel, ouvre le projet finance-flow → Settings → Environment Variables.</li>
+            <li>Ajoute <code>ANTHROPIC_API_KEY</code> avec ta clé, coche Production, enregistre.</li>
+            <li>Onglet Deployments → les trois points du dernier déploiement → Redeploy.</li>
+          </ol>
+          <p className="foot">La clé reste sur le serveur : elle n&apos;est jamais dans le code public ni dans ton navigateur.</p>
+        </>
+      )}
+      <h3 className="set-sub">Ce qui part vers l&apos;IA</h3>
+      <p className="muted small">Quand tu l&apos;utilises : tes libellés, montants, catégories et réglages utiles (objectifs, budgets). Ton nom et les numéros (comptes, cartes, références) sont retirés avant l&apos;envoi. Rien n&apos;est envoyé tant que tu ne cliques pas.</p>
     </>
   );
 }

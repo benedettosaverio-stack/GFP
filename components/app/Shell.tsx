@@ -10,6 +10,7 @@ import BudgetsTab from "./BudgetsTab";
 import Analysis from "./Analysis";
 import SettingsTab from "./SettingsTab";
 import VieCommune from "./VieCommune";
+import Assistant from "./Assistant";
 
 export type Tab = "synthese" | "operations" | "budgets" | "commune" | "analyse" | "reglages";
 
@@ -68,6 +69,7 @@ export default function Shell() {
             </button>
           ))}
         </nav>
+        <button className="ask" onClick={() => app.setAssistantOpen(true)}><Icon><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3ZM18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2Z" /></Icon>Demander à l&apos;IA</button>
         <ImportButton />
         <p className="who">{app.session.user.email}</p>
       </aside>
@@ -134,6 +136,8 @@ export default function Shell() {
           onCancel={app.skipPending}
         />
       )}
+      <button className="ask-fab only-mobile" onClick={() => app.setAssistantOpen(true)} aria-label="Demander à l'IA"><Icon><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3ZM18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2Z" /></Icon></button>
+      <Assistant />
       <DropZone />
       {app.toast && <div className="toast" role="status">{app.toast}</div>}
     </div>
