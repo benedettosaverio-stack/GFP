@@ -155,47 +155,48 @@ export default function Dashboard({ session }: { session: Session }) {
   return (
     <main className="wrap">
       <header className="top">
-        <h1>Mes dépenses</h1>
-        <div className="monthnav">
-          <button onClick={() => go(-1)} disabled={idx <= 0} aria-label="Mois précédent">‹</button>
-          <span>{month ? monthLabel(month) : "—"}</span>
-          <button onClick={() => go(1)} disabled={idx < 0 || idx >= months.length - 1} aria-label="Mois suivant">›</button>
-        </div>
+        <h1 className="month">{month ? monthLabel(month) : "GFP"}</h1>
+        {months.length > 1 && (
+          <div className="nav">
+            <button onClick={() => go(-1)} disabled={idx <= 0} aria-label="Mois précédent">‹</button>
+            <button onClick={() => go(1)} disabled={idx < 0 || idx >= months.length - 1} aria-label="Mois suivant">›</button>
+          </div>
+        )}
       </header>
 
-      {error && <div className="card neg">Connexion à la base impossible : {error}</div>}
+      {error && <p className="error">Impossible de joindre la base : {error}</p>}
 
       {txs === null ? (
-        <div className="empty">Chargement…</div>
+        <p className="loading">Chargement…</p>
       ) : !month ? (
-        <div className="card empty">
-          <b>Aucune opération pour l&apos;instant</b>
-          Importe le relevé PDF de ta banque ou un export CSV (Revolut…). Tout se trie automatiquement.
+        <div className="empty">
+          <b>Importe ton premier relevé</b>
+          Le PDF de ta banque ou un export CSV (Revolut…). Tes dépenses se rangent toutes seules par catégorie.
         </div>
       ) : (
         <>
-          <SummaryCard month={month} summary={summary} filter={filter} onFilter={setFilter} hasRevolut={hasRevolut} />
+          <SummaryCard summary={summary} filter={filter} onFilter={setFilter} hasRevolut={hasRevolut} />
           {tips.length > 0 && (
-            <>
-              <h2>À retenir</h2>
-              <div className="card">
-                {tips.map((t, i) => (
-                  <div className="insight" key={i}><span>{t.icon}</span><span>{t.text}</span></div>
-                ))}
-              </div>
-            </>
+            <section className="section">
+              <div className="section-title"><h2>À retenir</h2></div>
+              <ul className="notes">
+                {tips.map((t, i) => <li key={i} className={t.icon === "⚠️" ? "alert" : ""}>{t.text}</li>)}
+              </ul>
+            </section>
           )}
-          <h2>Par catégorie</h2>
-          <CategoryBreakdown summary={summary} budgets={budgets} filter={filter} onFilter={setFilter} onBudget={onBudget} />
+          <section className="section">
+            <div className="section-title"><h2>Par catégorie</h2></div>
+            <CategoryBreakdown summary={summary} budgets={budgets} filter={filter} onFilter={setFilter} onBudget={onBudget} />
+          </section>
           <TransactionList txs={monthTxs} shares={shares} labels={labels} filter={filter} onClearFilter={() => setFilter(null)} onRecategorize={onRecategorize} />
         </>
       )}
 
       <AccountsCard accounts={accounts} counts={counts} onSave={onSaveAccount} onDelete={onDeleteAccount} />
 
-      <div className="foot">
-        {session.user.email} · <button className="link" onClick={() => supabase().auth.signOut()}>Se déconnecter</button>
-      </div>
+      <p className="signout">
+        Connecté avec {session.user.email}. <button className="link" onClick={() => supabase().auth.signOut()}>Se déconnecter</button>
+      </p>
 
       <ImportBar busy={busy || queue.length > 0} onFiles={onImport} />
       {queue[0] && (

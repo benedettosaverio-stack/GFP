@@ -34,8 +34,11 @@ export function prettyLabel(raw: string): string {
     .replace(/,\s*SUCCURSALE.*$/i, "")
     .replace(/\s{2,}/g, " ")
     .trim();
+  const cap = (w: string) => w.charAt(0) + w.slice(1).toLowerCase();
   if (s === s.toUpperCase()) {
     s = s.toLowerCase().replace(/(^|[\s\-/(])([a-zà-ÿ])/g, (_m, a: string, b: string) => a + b.toUpperCase());
+  } else {
+    s = s.replace(/\b[A-ZÀ-Ý]{5,}\b/g, cap); // « PLAYSTATION Hilversum » → « Playstation Hilversum »
   }
   return s.slice(0, 60);
 }

@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { eur, monthLabel } from "@/lib/text";
+import { monthLabel } from "@/lib/text";
 import type { Account, AccountKind, ParsedStatement } from "@/lib/types";
 
 export const KIND_LABELS: Record<AccountKind, string> = {
@@ -31,8 +31,7 @@ export default function AccountPicker({ fileName, statement, accounts, onConfirm
   const info = useMemo(() => {
     const dates = statement.transactions.map((t) => t.date).sort();
     const months = [...new Set(dates.map((d) => d.slice(0, 7)))];
-    const net = statement.transactions.reduce((s, t) => s + t.amount, 0);
-    return { n: dates.length, period: months.map(monthLabel).join(", "), net };
+    return { n: dates.length, period: months.map(monthLabel).join(", ") };
   }, [statement]);
 
   function confirm() {
@@ -51,15 +50,15 @@ export default function AccountPicker({ fileName, statement, accounts, onConfirm
     <div className="modal" role="dialog" aria-modal="true">
       <div className="sheet">
         <h3>Ce relevé, c&apos;est quel compte ?</h3>
-        <p className="muted small">
-          {fileName} · {info.n} opérations · {info.period} · solde des mouvements {eur(info.net, 0)}
+        <p className="sub">
+          {info.n} opérations en {info.period}, dans {fileName}.
         </p>
 
         <div className="choices">
           {accounts.map((a) => (
             <label key={a.key} className={`choice ${choice === a.key ? "on" : ""}`}>
               <input type="radio" name="acc" checked={choice === a.key} onChange={() => setChoice(a.key)} />
-              <span><b>{a.label}</b><small>{KIND_LABELS[a.kind]}{a.kind === "joint" ? ` · ta part ${Math.round(a.share * 100)} %` : ""}</small></span>
+              <span><b>{a.label}</b><small>{KIND_LABELS[a.kind]}{a.kind === "joint" ? `, ta part : ${Math.round(a.share * 100)} %` : ""}</small></span>
             </label>
           ))}
           <label className={`choice ${choice === "__new" ? "on" : ""}`}>
@@ -89,7 +88,7 @@ export default function AccountPicker({ fileName, statement, accounts, onConfirm
 
         <div className="actions">
           <button className="ghost" onClick={onCancel}>Annuler</button>
-          <button className="primary" onClick={confirm}>Importer</button>
+          <button className="primary" onClick={confirm}>Importer {info.n} opérations</button>
         </div>
       </div>
     </div>

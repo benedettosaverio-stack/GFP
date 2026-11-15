@@ -4,8 +4,8 @@
   "description": "Importe ton relevé, tes dépenses se trient toutes seules.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f5f4f0",
-  "theme_color": "#1f6f5c",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "orientation": "portrait",
   "categories": [
     "finance",

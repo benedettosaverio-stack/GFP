@@ -33,7 +33,7 @@ export default function ImportBar({ busy, onFiles }: { busy: boolean; onFiles: (
     <>
       <div className="importbar">
         <label aria-busy={busy}>
-          {busy ? "Import en cours…" : "⬆︎ Importer un relevé (PDF ou CSV)"}
+          {busy ? "Import en cours…" : "Importer un relevé"}
           <input
             type="file" multiple accept=".pdf,.csv,.txt,application/pdf,text/csv"
             onChange={(e) => {

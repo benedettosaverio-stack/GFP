@@ -27,30 +27,34 @@ export const ALL_CATEGORIES: string[] = [...EXPENSE_CATEGORIES, ...INCOME_CATEGO
 export const isExpense = (c: string) => (EXPENSE_CATEGORIES as readonly string[]).includes(c);
 export const isIncome = (c: string) => (INCOME_CATEGORIES as readonly string[]).includes(c);
 
+/** Pastilles pastel par catégorie (le texte reste en encre, la couleur ne porte jamais seule l'information). */
 export const CATEGORY_COLORS: Record<string, string> = {
-  "Logement & charges": "#d97706",
-  Courses: "#ca8a04",
-  "Restos & sorties": "#db2777",
-  "Voiture – financement": "#2563eb",
-  "Carburant & péages": "#3b82f6",
-  "Entretien véhicule": "#1d4ed8",
-  Assurances: "#0d9488",
-  "Abonnements & téléphone": "#7c3aed",
-  "Sport & compétitions": "#dc2626",
-  "Matos musique / photo": "#9333ea",
-  Santé: "#14b8a6",
-  "Shopping & vêtements": "#e11d48",
-  "Loisirs & jeux": "#f97316",
-  Voyages: "#0891b2",
-  Cadeaux: "#eab308",
-  Divers: "#6b7280",
-  Salaire: "#16a34a",
-  "Prestas SBSAX / photo": "#22c55e",
-  Remboursements: "#4ade80",
-  "Autres revenus": "#15803d",
-  [SAVINGS]: "#0f766e",
-  [INTERNAL]: "#9ca3af",
+  "Logement & charges": "#E3A869",
+  Courses: "#D6BE4F",
+  "Restos & sorties": "#E58FA8",
+  "Voiture – financement": "#7FA3E0",
+  "Carburant & péages": "#8DB8E8",
+  "Entretien véhicule": "#6F8FD1",
+  Assurances: "#6CC3B5",
+  "Abonnements & téléphone": "#A99BE3",
+  "Sport & compétitions": "#EE8E7E",
+  "Matos musique / photo": "#C49BE0",
+  Santé: "#7CCFC0",
+  "Shopping & vêtements": "#E99AC7",
+  "Loisirs & jeux": "#F2B07E",
+  Voyages: "#79C2D9",
+  Cadeaux: "#E6CF7A",
+  Divers: "#B9BCC4",
+  Salaire: "#7CC59A",
+  "Prestas SBSAX / photo": "#9AD3A8",
+  Remboursements: "#B6DDB0",
+  "Autres revenus": "#8CC9A0",
+  [SAVINGS]: "#7FBFB3",
+  [INTERNAL]: "#C9CCD3",
 };
+
+/** Fond très léger dérivé de la pastille. */
+export const tint = (c: string) => `color-mix(in srgb, ${CATEGORY_COLORS[c] ?? "#C9CCD3"} 18%, white)`;
 
 /**
  * Mots-clés testés dans l'ordre sur le libellé normalisé (majuscules, sans accents, tirets → espaces).

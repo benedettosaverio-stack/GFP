@@ -53,10 +53,10 @@ export function insights(txs: Transaction[], s: MonthSummary, previous: MonthSum
   if (repeat) out.push({ icon: "🔁", text: `${repeat.label} : ${repeat.n} achats ce mois, ${fmt(repeat.sum)} au total.` });
 
   const top = Object.entries(s.byCategory).sort((a, b) => b[1] - a[1])[0];
-  if (top && s.spent > 0) out.push({ icon: "📊", text: `${top[0]} = ${Math.round((top[1] / s.spent) * 100)} % de tes dépenses (${fmt(top[1])}).` });
+  if (top && s.spent > 0) out.push({ icon: "📊", text: `${top[0]} représente ${Math.round((top[1] / s.spent) * 100)} % de tes dépenses (${fmt(top[1])}).` });
 
   const subs = s.byCategory["Abonnements & téléphone"];
-  if (subs) out.push({ icon: "📅", text: `Abonnements : ${fmt(subs)}/mois, soit ~${fmt(subs * 12)} par an.` });
+  if (subs) out.push({ icon: "📅", text: `Abonnements : ${fmt(subs)} par mois, soit environ ${fmt(subs * 12)} par an.` });
 
   if (previous && previous.spent > 0) {
     const diff = s.spent - previous.spent;

@@ -15,14 +15,14 @@ export default function AccountsCard({ accounts, counts, onSave, onDelete }: Pro
   const [confirming, setConfirming] = useState<string | null>(null);
   if (!accounts.length) return null;
   return (
-    <>
-      <h2>Mes comptes</h2>
-      <section className="card">
+    <section className="section">
+      <div className="section-title"><h2>Mes comptes</h2></div>
+      <div className="accs">
         {accounts.map((a) => (
-          <div key={a.key} className="acc">
+          <div key={a.key}>
             <div className="acc-head">
               <b>{a.label}</b>
-              <span className="muted small">{counts[a.key] ?? 0} opérations</span>
+              <span className="muted small num">{counts[a.key] ?? 0} opérations</span>
             </div>
             <div className="acc-row">
               <select value={a.kind} onChange={(e) => onSave({ ...a, kind: e.target.value as AccountKind, share: e.target.value === "joint" ? (a.share < 1 ? a.share : 0.5) : 1 })}>
@@ -38,17 +38,17 @@ export default function AccountsCard({ accounts, counts, onSave, onDelete }: Pro
                 </label>
               )}
               {confirming === a.key ? (
-                <button className="link neg" onClick={() => { setConfirming(null); onDelete(a.key); }}>Confirmer la suppression</button>
+                <button className="link neg" onClick={() => { setConfirming(null); onDelete(a.key); }}>Supprimer ses {counts[a.key] ?? 0} opérations ?</button>
               ) : (
-                <button className="link muted" onClick={() => setConfirming(a.key)}>Supprimer</button>
+                <button className="link muted" onClick={() => setConfirming(a.key)}>Supprimer le compte</button>
               )}
             </div>
           </div>
         ))}
-        <p className="small muted" style={{ margin: "10px 0 0" }}>
-          Changer le type s&apos;applique aux prochains imports. Pour reclasser ce qui est déjà importé, supprime le compte puis réimporte son relevé.
-        </p>
-      </section>
-    </>
+      </div>
+      <p className="foot">
+        Le type s&apos;applique aux prochains imports. Pour reclasser un relevé déjà importé, supprime le compte puis réimporte-le.
+      </p>
+    </section>
   );
 }

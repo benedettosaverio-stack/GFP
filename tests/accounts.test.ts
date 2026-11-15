@@ -25,7 +25,7 @@ test("Revolut export français : sous-comptes ignorés, opérations en attente i
   const st = parseCSV(REVOLUT_FR, "account-statement.csv");
   assert.equal(st.source, "Revolut");
   const tx = toNewTransactions({ ...st, account: "revolut-perso" });
-  const cat = Object.fromEntries(tx.map((t) => [t.label, t.category]));
+  const cat = Object.fromEntries(tx.map((t) => [t.raw, t.category]));
   assert.equal(tx.length, 6); // 2 lignes du coffre « Épargne » et 1 en attente écartées
   assert.equal(cat["À EUR Compte d'épargne"], "Épargne & placements");
   assert.equal(cat["Virement à : MARIE MARTIN & JEAN PAUL DUPONT"], "Virement interne"); // vers le compte joint
