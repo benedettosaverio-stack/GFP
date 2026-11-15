@@ -26,7 +26,7 @@ const OPENAI_LIKE: Partial<Record<Provider, string>> = {
   gemini: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
 };
 /** Taille max du contexte envoyé (les offres gratuites de Groq ont des quotas de tokens par minute serrés). */
-const CONTEXT_MAX: Record<Provider, number> = { mistral: 120_000, groq: 24_000, gemini: 120_000, anthropic: 120_000 };
+const CONTEXT_MAX: Record<Provider, number> = { mistral: 120_000, groq: 14_000, gemini: 120_000, anthropic: 120_000 };
 const model = (p: Provider) => process.env.AI_MODEL || DEFAULT_MODEL[p];
 /** Liste d'identifiants Supabase autorisés (séparés par des virgules). Vide = tout utilisateur connecté. */
 const ALLOWED = () => (process.env.AI_ALLOWED_USERS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
