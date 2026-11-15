@@ -64,7 +64,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
 const fromEnv = (v: string | undefined) =>
   (v ?? "").split(",").map((x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim()).filter(Boolean);
 const OWNER_NAMES = fromEnv(process.env.NEXT_PUBLIC_OWNER_NAMES);
-/** Chaque nom du titulaire découpé en mots : « VIREMENT A : X & SAVERIO JEAN BENEDETTO » contient SAVERIO et BENEDETTO. */
+/** Chaque nom du titulaire découpé en mots : « VIREMENT A : X & PRENOM 2E-PRENOM NOM » contient PRENOM et NOM. */
 export const OWNER_TOKENS: string[][] = OWNER_NAMES.map((n) => n.split(/\s+/).filter((w) => w.length > 1));
 const SALARY_KEYWORDS = fromEnv(process.env.NEXT_PUBLIC_SALARY_KEYWORDS);
 
