@@ -6,6 +6,8 @@ export type Settings = {
   ownerNames: string[];
   salaryKeywords: string[];
   partnerName: string;
+  // Salaire versé fin de mois pour le mois suivant : à partir de ce jour, il compte pour le mois d'après (0 = désactivé)
+  salaryShiftDay: number;
   // Tri
   keywordRules: KeywordRule[];
   // Catégories
@@ -29,6 +31,7 @@ export const DEFAULT_SETTINGS: Settings = {
   ownerNames: [],
   salaryKeywords: [],
   partnerName: "",
+  salaryShiftDay: 20,
   keywordRules: [],
   customCategories: [],
   colors: {},

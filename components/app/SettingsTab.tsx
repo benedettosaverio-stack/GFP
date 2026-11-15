@@ -254,6 +254,16 @@ function Profile() {
         <input value={names} placeholder="PRÉNOM NOM, NOM PRÉNOM" onChange={(e) => setNames(e.target.value)} onBlur={() => app.updateSettings({ ownerNames: split(names) })} />
         <small>Un virement à ton nom (entre tes comptes, vers le joint) n&apos;est ni une dépense ni une rentrée.</small>
       </label>
+      <label className="toggle">
+        <input type="checkbox" checked={s.salaryShiftDay > 0} onChange={(e) => app.updateSettings({ salaryShiftDay: e.target.checked ? 20 : 0 }, e.target.checked ? "Salaire compté pour le mois suivant" : "Salaire compté le mois où il arrive")} />
+        <span>Mon salaire de fin de mois finance le mois suivant<small>Payé fin octobre pour novembre : il compte dans les rentrées de novembre. Tes budgets et ta marge comparent ce que tu dépenses avec le salaire qui le finance.</small></span>
+      </label>
+      {s.salaryShiftDay > 0 && (
+        <label className="target">
+          <span><b>À partir du</b><small>Un salaire reçu ce jour-là ou après compte pour le mois suivant</small></span>
+          <span><input type="number" min={1} max={31} defaultValue={s.salaryShiftDay} onBlur={(e) => { const v = Math.min(31, Math.max(1, Number(e.target.value) || 20)); if (v !== s.salaryShiftDay) app.updateSettings({ salaryShiftDay: v }); }} /> du mois</span>
+        </label>
+      )}
       <label className="field">Prénom de l&apos;autre titulaire du compte joint
         <input defaultValue={s.partnerName} placeholder="Prénom" onBlur={(e) => e.target.value.trim() !== s.partnerName && app.updateSettings({ partnerName: e.target.value.trim() })} />
         <small>Affiché dans l&apos;onglet Vie commune.</small>

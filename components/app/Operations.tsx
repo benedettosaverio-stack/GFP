@@ -97,6 +97,7 @@ export default function Operations() {
                     {app.accounts.length > 1 && <span>{app.labels[t.account] ?? t.account}</span>}
                     {part < 1 && !dim && <span>ta part sur {eur(Math.abs(t.amount))}</span>}
                     {shared && <span>compte commun</span>}
+                    {t.paidOn && <span>versé le {t.paidOn.slice(8, 10)}/{t.paidOn.slice(5, 7)}, compté pour ce mois</span>}
                   </div>
                 </div>
                 <div className={`a num ${t.amount > 0 && !dim ? "pos" : ""}`}>

@@ -1,7 +1,7 @@
 // npm test — compte joint en mode « Vie commune »
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { household, jointLinks, withVieCommune } from "../lib/household.ts";
+import { household, jointLinks, shiftSalary, withVieCommune } from "../lib/household.ts";
 import { summarize } from "../lib/stats.ts";
 import { categorize, toNewTransactions } from "../lib/categorize.ts";
 
@@ -45,4 +45,16 @@ test("la CAF reçue sur le joint reste une aide, pas un simple versement", () =>
   const [row] = toNewTransactions({ account: "j", source: "Revolut", transactions: [{ date: "2026-10-05", raw: "CAF DU NORD", amount: 312, extra: "" }] }, {}, "joint");
   assert.equal(row.category, "Aides & allocations");
   assert.equal(categorize("CAFE DE LA GARE", -4, ""), "Restos & sorties");
+});
+
+test("le salaire de fin de mois compte pour le mois suivant", () => {
+  const list = [
+    { date: "2026-10-28", category: "Salaire", amount: 1800 },
+    { date: "2026-12-30", category: "Salaire", amount: 1800 },
+    { date: "2026-10-05", category: "Salaire", amount: 100 },
+    { date: "2026-10-29", category: "Courses", amount: -40 },
+  ];
+  const out = shiftSalary(list, 20);
+  assert.deepEqual(out.map((t) => t.date), ["2026-11-01", "2027-01-01", "2026-10-05", "2026-10-29"]);
+  assert.equal(out[0].paidOn, "2026-10-28");
 });

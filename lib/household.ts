@@ -75,3 +75,17 @@ export function household(monthTxs: Tx[], jointKeys: Set<string>, fromMe: Set<st
   }
   return h;
 }
+
+/**
+ * Salaire versé en fin de mois pour le mois suivant (ex. payé le 28 octobre pour novembre) :
+ * on le rattache au 1er du mois suivant, pour que chaque mois ait les rentrées qui le financent.
+ * La date réelle reste dans `paidOn`.
+ */
+export function shiftSalary<T extends { date: string; category: string; amount: number; paidOn?: string }>(txs: T[], fromDay: number, categories = ["Salaire"]): T[] {
+  return txs.map((t) => {
+    if (t.amount <= 0 || !categories.includes(t.category) || Number(t.date.slice(8, 10)) < fromDay) return t;
+    const [y, m] = t.date.split("-").map(Number);
+    const next = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
+    return { ...t, date: next, paidOn: t.date };
+  });
+}

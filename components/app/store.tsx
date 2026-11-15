@@ -9,7 +9,7 @@ import { importStatement, readStatement } from "@/lib/import";
 import { categorize } from "@/lib/categorize";
 import { configure, HOUSEHOLD_INCOME, INTERNAL } from "@/lib/categories";
 import { summarize, type Shares } from "@/lib/stats";
-import { household, jointLinks, withVieCommune } from "@/lib/household";
+import { household, jointLinks, shiftSalary, withVieCommune } from "@/lib/household";
 import { merchantKey, setShowCents } from "@/lib/text";
 import { DEFAULT_SETTINGS, type Settings } from "@/lib/settings";
 import type { Account, Budgets, ParsedStatement, Rules, Transaction } from "@/lib/types";
@@ -74,7 +74,7 @@ function useAppState(session: Session) {
 
   useEffect(() => { reload(); }, [reload]);
 
-  const months = useMemo(() => [...new Set((rawTxs ?? []).map((t) => t.date.slice(0, 7)))].sort(), [rawTxs]);
+
   const jointKeys = useMemo(() => new Set(accounts.filter((a) => a.kind === "joint").map((a) => a.key)), [accounts]);
   const commune = settings.jointMode === "commune";
   // Mode « Vie commune » : le compte joint sort de ton budget perso, tes virements vers lui deviennent une dépense.
@@ -83,7 +83,13 @@ function useAppState(session: Session) {
     [accounts, commune],
   );
   const links = useMemo(() => jointLinks(rawTxs ?? [], jointKeys), [rawTxs, jointKeys]);
-  const txs = useMemo(() => (rawTxs && commune ? withVieCommune(rawTxs, links.mine) : rawTxs), [rawTxs, commune, links]);
+  const shiftDay = settings.salaryShiftDay;
+  const txs = useMemo(() => {
+    if (!rawTxs) return rawTxs;
+    const t = commune ? withVieCommune(rawTxs, links.mine) : rawTxs;
+    return shiftDay > 0 ? shiftSalary(t, shiftDay) : t;
+  }, [rawTxs, commune, links, shiftDay]);
+  const months = useMemo(() => [...new Set((txs ?? []).map((t) => t.date.slice(0, 7)))].sort(), [txs]);
   const monthTxs = useMemo(() => (txs ?? []).filter((t) => month && t.date.startsWith(month)), [txs, month]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const home = useMemo(() => household(monthTxs, jointKeys, links.fromMe), [monthTxs, jointKeys, links, version]);

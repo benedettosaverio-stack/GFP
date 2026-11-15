@@ -10,6 +10,8 @@ export type Transaction = {
   account: string;
   source: string;
   manual: boolean;
+  /** Date réelle de versement quand l'opération est rattachée à un autre mois (salaire versé en avance). */
+  paidOn?: string;
 };
 
 /** Opération sortie d'un relevé, avant enregistrement. */
