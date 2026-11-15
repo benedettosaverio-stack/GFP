@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { ALL_CATEGORIES, CATEGORY_COLORS, INTERNAL, SAVINGS, isIncome } from "@/lib/categories";
 import { eur } from "@/lib/text";
+import { myAmount, type Shares } from "@/lib/stats";
 import type { Transaction } from "@/lib/types";
 import { FILTER_INCOME, FILTER_SAVINGS, type Filter } from "./SummaryCard";
 
 type Props = {
   txs: Transaction[];
+  shares: Shares;
+  labels: Record<string, string>;
   filter: Filter;
   onClearFilter: () => void;
   onRecategorize: (tx: Transaction, category: string) => void;
@@ -13,7 +16,7 @@ type Props = {
 
 const TITLES: Record<string, string> = { [FILTER_INCOME]: "Rentrées", [FILTER_SAVINGS]: "Mis de côté" };
 
-export default function TransactionList({ txs, filter, onClearFilter, onRecategorize }: Props) {
+export default function TransactionList({ txs, shares, labels, filter, onClearFilter, onRecategorize }: Props) {
   const [showInternal, setShowInternal] = useState(false);
   const sorted = [...txs].sort((a, b) => b.date.localeCompare(a.date) || a.amount - b.amount);
   const internal = sorted.filter((t) => t.category === INTERNAL);
@@ -49,11 +52,12 @@ export default function TransactionList({ txs, filter, onClearFilter, onRecatego
                       {ALL_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                     </select>
                   </span>
-                  {accounts.size > 1 && <span>· {t.account}</span>}
+                  {accounts.size > 1 && <span>· {labels[t.account] ?? t.account}</span>}
+                  {(shares[t.account] ?? 1) < 1 && !dim && <span>· ta part sur {eur(Math.abs(t.amount))}</span>}
                 </div>
               </div>
               <div className={`a num ${t.amount > 0 && !dim ? "pos" : ""}`}>
-                {dim ? eur(Math.abs(t.amount)) : (t.amount > 0 ? "+" : "") + eur(t.amount)}
+                {dim ? eur(Math.abs(t.amount)) : (t.amount > 0 ? "+" : "") + eur(myAmount(t, shares))}
               </div>
             </div>
           );

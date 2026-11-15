@@ -117,3 +117,30 @@ button.stat.on { border-color: var(--accent); background: var(--accent-soft); }
 .auth button[type="submit"] { padding: 13px; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 700; cursor: pointer; }
 .auth .err { color: var(--red); font-size: 13.5px; }
 .auth .switch { margin-top: 14px; text-align: center; font-size: 13.5px; }
+
+/* Choix du compte à l'import */
+.small { font-size: 12.5px; }
+.modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
+@media (min-width: 600px) { .modal { align-items: center; } }
+.sheet { background: var(--card); width: 100%; max-width: 480px; border-radius: 18px 18px 0 0; padding: 20px 18px max(18px, env(safe-area-inset-bottom)); max-height: 90vh; overflow: auto; }
+@media (min-width: 600px) { .sheet { border-radius: 18px; } }
+.sheet h3 { margin: 0 0 4px; font-size: 18px; }
+.choices { display: grid; gap: 8px; margin: 14px 0; }
+.choice { display: flex; gap: 10px; align-items: center; padding: 11px 12px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
+.choice.on { border-color: var(--accent); background: var(--accent-soft); }
+.choice span { display: grid; }
+.choice small { color: var(--muted); }
+.newacc { display: grid; gap: 8px; margin-bottom: 8px; }
+.newacc input, .newacc select, .acc select, .acc input { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.newacc label input, .acc label input { width: 70px; padding: 6px 8px; }
+.actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+.actions button { padding: 11px 16px; border-radius: 12px; border: 0; font-weight: 700; cursor: pointer; }
+.actions .primary { background: var(--accent); color: var(--accent-ink); }
+.actions .ghost { background: var(--bg); }
+
+/* Mes comptes */
+.acc { padding: 10px 0; border-top: 1px solid var(--line); }
+.acc:first-child { border-top: 0; padding-top: 0; }
+.acc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.acc-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 8px; }
+.acc select { padding: 7px 10px; }

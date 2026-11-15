@@ -10,9 +10,16 @@ export type MonthSummary = {
   byCategory: Record<string, number>;
 };
 
-export function summarize(txs: Pick<Transaction, "amount" | "category">[]): MonthSummary {
+/** Part de chaque compte (1 par défaut, ex. 0.5 pour un compte joint partagé à deux). */
+export type Shares = Record<string, number>;
+
+/** Montant qui te revient : les dépenses d'un compte joint ne comptent qu'à hauteur de ta part. */
+export const myAmount = (t: Pick<Transaction, "amount" | "account">, shares: Shares = {}) => t.amount * (shares[t.account] ?? 1);
+
+export function summarize(all: Pick<Transaction, "amount" | "category" | "account">[], shares: Shares = {}): MonthSummary {
   const s: MonthSummary = { spent: 0, income: 0, saved: 0, internal: 0, byCategory: {} };
-  for (const t of txs) {
+  for (const raw of all) {
+    const t = { ...raw, amount: myAmount(raw, shares) };
     if (isExpense(t.category)) {
       s.spent -= t.amount; // un remboursement en catégorie de dépense vient en déduction
       s.byCategory[t.category] = (s.byCategory[t.category] ?? 0) - t.amount;
@@ -25,7 +32,7 @@ export function summarize(txs: Pick<Transaction, "amount" | "category">[]): Mont
 
 export type Insight = { icon: string; text: string };
 
-export function insights(txs: Transaction[], s: MonthSummary, previous: MonthSummary | null, budgets: Budgets): Insight[] {
+export function insights(txs: Transaction[], s: MonthSummary, previous: MonthSummary | null, budgets: Budgets, shares: Shares = {}): Insight[] {
   const out: Insight[] = [];
   const fmt = (n: number) => Math.round(n).toLocaleString("fr-FR") + " €";
 
@@ -40,7 +47,7 @@ export function insights(txs: Transaction[], s: MonthSummary, previous: MonthSum
     const k = merchantKey(t.raw);
     groups[k] ??= { n: 0, sum: 0, label: t.label };
     groups[k].n++;
-    groups[k].sum -= t.amount;
+    groups[k].sum -= myAmount(t, shares);
   }
   const repeat = Object.values(groups).filter((g) => g.n >= 3).sort((a, b) => b.sum - a.sum)[0];
   if (repeat) out.push({ icon: "🔁", text: `${repeat.label} : ${repeat.n} achats ce mois, ${fmt(repeat.sum)} au total.` });

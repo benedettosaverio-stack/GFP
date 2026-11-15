@@ -31,3 +31,8 @@ export type NewTransaction = Omit<Transaction, "id">;
 
 export type Rules = Record<string, string>; // merchant_key → catégorie
 export type Budgets = Record<string, number>; // catégorie → montant mensuel
+
+export type AccountKind = "courant" | "epargne" | "joint";
+
+/** Compte bancaire (table ff_accounts). `share` = ta part des dépenses (compte joint). */
+export type Account = { key: string; label: string; kind: AccountKind; share: number; detected: string | null };

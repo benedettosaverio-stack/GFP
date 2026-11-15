@@ -3,9 +3,9 @@ import { supabase } from "./supabase";
 import { parseCSV } from "./parse/csv";
 import { toNewTransactions } from "./categorize";
 import { importTransactions } from "./db";
-import type { ParsedStatement, Rules } from "./types";
+import type { Account, ParsedStatement, Rules } from "./types";
 
-async function readStatement(file: File): Promise<ParsedStatement> {
+export async function readStatement(file: File): Promise<ParsedStatement> {
   const isPdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
   if (!isPdf) return parseCSV(await file.text(), file.name);
 
@@ -22,26 +22,11 @@ async function readStatement(file: File): Promise<ParsedStatement> {
   return json as ParsedStatement;
 }
 
-export type ImportResult = { added: number; duplicates: number; linked: number; failed: string[]; months: string[] };
+export type ImportResult = { added: number; duplicates: number; linked: number; months: string[] };
 
-/** Lit chaque fichier (PDF via le serveur, CSV dans le navigateur), catégorise et enregistre. */
-export async function importFiles(files: File[], rules: Rules): Promise<ImportResult> {
-  const result: ImportResult = { added: 0, duplicates: 0, linked: 0, failed: [], months: [] };
-  for (const file of files) {
-    try {
-      const statement = await readStatement(file);
-      if (!statement.transactions.length) throw new Error("vide");
-      const rows = toNewTransactions(statement, rules);
-      const r = await importTransactions(rows);
-      result.added += r.added;
-      result.duplicates += r.duplicates;
-      result.linked += r.linked;
-      result.months.push(...rows.map((t) => t.date.slice(0, 7)));
-    } catch (e) {
-      console.error(file.name, e);
-      result.failed.push(file.name);
-    }
-  }
-  result.months = [...new Set(result.months)].sort();
-  return result;
+/** Enregistre un relevé déjà lu, rattaché au compte choisi. */
+export async function importStatement(statement: ParsedStatement, account: Account, rules: Rules): Promise<ImportResult> {
+  const rows = toNewTransactions({ ...statement, account: account.key }, rules, account.kind);
+  const r = await importTransactions(rows);
+  return { ...r, months: [...new Set(rows.map((t) => t.date.slice(0, 7)))].sort() };
 }

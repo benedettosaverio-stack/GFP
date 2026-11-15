@@ -2,7 +2,7 @@
 import { supabase } from "./supabase";
 import { merchantKey, shiftMonth } from "./text";
 import { linkTransfers } from "./transfers";
-import type { Budgets, NewTransaction, Rules, Transaction } from "./types";
+import type { Account, AccountKind, Budgets, NewTransaction, Rules, Transaction } from "./types";
 
 const TX = "ff_transactions";
 
@@ -93,4 +93,20 @@ export async function setBudget(category: string, amount: number | null): Promis
 
 export async function deleteMonth(month: string): Promise<void> {
   check(await supabase().from(TX).delete().gte("date", month + "-01").lt("date", shiftMonth(month, 1) + "-01"));
+}
+
+export async function loadAccounts(): Promise<Account[]> {
+  const rows = check(await supabase().from("ff_accounts").select("key,label,kind,share,detected").order("label")) as
+    (Omit<Account, "share"> & { share: number | string })[];
+  return rows.map((r) => ({ ...r, kind: r.kind as AccountKind, share: Number(r.share) }));
+}
+
+export async function saveAccount(a: Account): Promise<void> {
+  check(await supabase().from("ff_accounts").upsert({ user_id: await userId(), ...a, updated_at: new Date().toISOString() }));
+}
+
+/** Supprime toutes les opérations d'un compte (pour le réimporter proprement) et le compte lui-même. */
+export async function deleteAccount(key: string): Promise<void> {
+  check(await supabase().from(TX).delete().eq("account", key));
+  check(await supabase().from("ff_accounts").delete().eq("key", key));
 }
