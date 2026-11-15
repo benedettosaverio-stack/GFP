@@ -22,10 +22,71 @@ export const INCOME_CATEGORIES = ["Salaire", "Prestas SBSAX / photo", "Rembourse
 export const SAVINGS = "Épargne & placements";
 export const INTERNAL = "Virement interne";
 
+/* ------------------------------------------------------------------
+ * Configuration personnelle (réglages de l'utilisateur), appliquée au chargement.
+ * Les valeurs par défaut reproduisent le comportement d'origine.
+ * ------------------------------------------------------------------ */
+export type CustomCategory = { name: string; kind: "expense" | "income"; color: string };
+export type KeywordRule = { keyword: string; category: string };
+export type Targets = { savings: number; needs: number; wants: number };
+
+export const DEFAULT_NEEDS = [
+  "Logement & charges", "Courses", "Voiture – financement", "Carburant & péages",
+  "Entretien véhicule", "Assurances", "Santé",
+];
+
+type Config = {
+  custom: CustomCategory[];
+  colors: Record<string, string>;
+  hidden: string[];
+  needs: string[];
+  targets: Targets;
+  ownerNames: string[];
+  salaryKeywords: string[];
+  keywordRules: KeywordRule[];
+};
+
+const fromEnv = (v: string | undefined) =>
+  (v ?? "").split(",").map((x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim()).filter(Boolean);
+
+const upper = (xs: string[]) => xs.map((x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim()).filter(Boolean);
+
+let CONFIG: Config = {
+  custom: [],
+  colors: {},
+  hidden: [],
+  needs: DEFAULT_NEEDS,
+  targets: { savings: 0.2, needs: 0.5, wants: 0.3 },
+  // repli sur les variables d'environnement tant que rien n'est saisi dans les réglages
+  ownerNames: fromEnv(process.env.NEXT_PUBLIC_OWNER_NAMES),
+  salaryKeywords: fromEnv(process.env.NEXT_PUBLIC_SALARY_KEYWORDS),
+  keywordRules: [],
+};
+
+export function configure(c: Partial<Config>) {
+  CONFIG = {
+    ...CONFIG,
+    ...c,
+    ownerNames: c.ownerNames?.length ? upper(c.ownerNames) : CONFIG.ownerNames,
+    salaryKeywords: c.salaryKeywords?.length ? upper(c.salaryKeywords) : CONFIG.salaryKeywords,
+    keywordRules: (c.keywordRules ?? CONFIG.keywordRules).map((r) => ({ ...r, keyword: upper([r.keyword])[0] ?? "" })).filter((r) => r.keyword),
+  };
+}
+export const config = () => CONFIG;
+
+export const expenseCategories = (): string[] => [...EXPENSE_CATEGORIES, ...CONFIG.custom.filter((c) => c.kind === "expense").map((c) => c.name)];
+export const incomeCategories = (): string[] => [...INCOME_CATEGORIES, ...CONFIG.custom.filter((c) => c.kind === "income").map((c) => c.name)];
+/** Toutes les catégories ; `visibleOnly` retire celles masquées dans les réglages. */
+export const allCategories = (visibleOnly = false): string[] =>
+  [...expenseCategories(), ...incomeCategories(), SAVINGS, INTERNAL].filter((c) => !visibleOnly || !CONFIG.hidden.includes(c));
+/** @deprecated utiliser allCategories() */
 export const ALL_CATEGORIES: string[] = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES, SAVINGS, INTERNAL];
 
-export const isExpense = (c: string) => (EXPENSE_CATEGORIES as readonly string[]).includes(c);
-export const isIncome = (c: string) => (INCOME_CATEGORIES as readonly string[]).includes(c);
+export const isExpense = (c: string) => expenseCategories().includes(c);
+export const isIncome = (c: string) => incomeCategories().includes(c);
+export const isNeed = (c: string) => CONFIG.needs.includes(c);
+/** Chaque nom du titulaire découpé en mots : « VIREMENT A : X & PRENOM 2E-PRENOM NOM » contient PRENOM et NOM. */
+export const ownerTokens = (): string[][] => CONFIG.ownerNames.map((n) => n.split(/\s+/).filter((w) => w.length > 1));
 
 /** Pastilles pastel par catégorie (le texte reste en encre, la couleur ne porte jamais seule l'information). */
 export const CATEGORY_COLORS: Record<string, string> = {
@@ -53,25 +114,19 @@ export const CATEGORY_COLORS: Record<string, string> = {
   [INTERNAL]: "#C9CCD3",
 };
 
+/** Palette proposée pour les catégories personnalisées. */
+export const PALETTE = ["#EE8E7E", "#E58FA8", "#E99AC7", "#C49BE0", "#A99BE3", "#7FA3E0", "#8DB8E8", "#79C2D9", "#6CC3B5", "#7CC59A", "#B6DDB0", "#D6BE4F", "#E3A869", "#F2B07E", "#B9BCC4"];
+
+export const colorOf = (c: string) =>
+  CONFIG.colors[c] ?? CATEGORY_COLORS[c] ?? CONFIG.custom.find((x) => x.name === c)?.color ?? "#C9CCD3";
+
 /** Fond très léger dérivé de la pastille. */
-export const tint = (c: string) => `color-mix(in srgb, ${CATEGORY_COLORS[c] ?? "#C9CCD3"} 18%, white)`;
+export const tint = (c: string) => `color-mix(in srgb, ${colorOf(c)} 18%, var(--paper))`;
 
 /**
  * Mots-clés testés dans l'ordre sur le libellé normalisé (majuscules, sans accents, tirets → espaces).
  * Pour Virement interne et Épargne, seul le libellé principal est testé (pas les lignes de détail).
  */
-/**
- * Mots-clés personnels, hors du code (le dépôt peut être public) :
- *   NEXT_PUBLIC_OWNER_NAMES="PRENOM NOM,NOM PRENOM"  → virements à ton nom = virements internes
- *   NEXT_PUBLIC_SALARY_KEYWORDS="NOM EMPLOYEUR"       → rentrées classées en Salaire
- */
-const fromEnv = (v: string | undefined) =>
-  (v ?? "").split(",").map((x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim()).filter(Boolean);
-const OWNER_NAMES = fromEnv(process.env.NEXT_PUBLIC_OWNER_NAMES);
-/** Chaque nom du titulaire découpé en mots : « VIREMENT A : X & PRENOM 2E-PRENOM NOM » contient PRENOM et NOM. */
-export const OWNER_TOKENS: string[][] = OWNER_NAMES.map((n) => n.split(/\s+/).filter((w) => w.length > 1));
-const SALARY_KEYWORDS = fromEnv(process.env.NEXT_PUBLIC_SALARY_KEYWORDS);
-
 const INTERNAL_KEYWORDS = [
   "VIREMENT INTERNE", "VIR INTERNE", "COMPTE A COMPTE",
   "VIR DE COMPTE", "VIR VERS COMPTE", "VERS COMPTE", "DE COMPTE", "COMPTE CHEQUE", "COMPTE COURANT", "REVOLUT",
@@ -108,7 +163,7 @@ export const INCOME_RULES: [string, string[]][] = [
   [INTERNAL, INTERNAL_KEYWORDS],
   ["Autres revenus", ["INTERETS", "INTEREST"]],
   [SAVINGS, ["DE LIVRET", "LIVRET A", "LDDS", "LEP ", "PEL ", "EPARGNE", "INVESTISSEMENT", "ROBO PORTFOLIO", "SAVINGS", "VAULT"]],
-  ["Salaire", [...SALARY_KEYWORDS, "SALAIRE", "PAIE "]],
+  ["Salaire", ["SALAIRE", "PAIE "]],
   ["Remboursements", ["CPAM", "MUTUELLE", "PRESTATIONS SANTE", "REMB", "REFUND", "REMBOURSEMENT", "AMELI"]],
   ["Prestas SBSAX / photo", ["SBSAX", "PRESTATION", "FACTURE", "MARIAGE", "STRIPE", "SUMUP"]],
 ];

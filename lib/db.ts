@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 import { merchantKey, shiftMonth } from "./text";
 import { linkTransfers } from "./transfers";
 import type { Account, AccountKind, Budgets, NewTransaction, Rules, Transaction } from "./types";
+import { withDefaults, type Settings } from "./settings";
 
 const TX = "ff_transactions";
 
@@ -109,4 +110,50 @@ export async function saveAccount(a: Account): Promise<void> {
 export async function deleteAccount(key: string): Promise<void> {
   check(await supabase().from(TX).delete().eq("account", key));
   check(await supabase().from("ff_accounts").delete().eq("key", key));
+}
+
+/* ---------------- Réglages ---------------- */
+
+export async function loadSettings(): Promise<Settings> {
+  const { data, error } = await supabase().from("ff_settings").select("data").maybeSingle();
+  if (error) throw new Error(error.message);
+  return withDefaults((data as { data?: Partial<Settings> } | null)?.data);
+}
+
+export async function saveSettings(s: Settings): Promise<void> {
+  check(await supabase().from("ff_settings").upsert({ user_id: await userId(), data: s, updated_at: new Date().toISOString() }));
+}
+
+/* ---------------- Opérations ---------------- */
+export async function updateTransaction(id: string, patch: Partial<Pick<Transaction, "label" | "category" | "manual">>): Promise<void> {
+  check(await supabase().from(TX).update(patch).eq("id", id));
+}
+
+export async function deleteTransaction(id: string): Promise<void> {
+  check(await supabase().from(TX).delete().eq("id", id));
+}
+
+/** Applique en base une liste de changements de catégorie (re-tri). */
+export async function applyCategories(changes: { id: string; category: string }[]): Promise<void> {
+  const byCat = new Map<string, string[]>();
+  for (const c of changes) byCat.set(c.category, [...(byCat.get(c.category) ?? []), c.id]);
+  for (const [category, ids] of byCat) {
+    for (let i = 0; i < ids.length; i += 200) check(await supabase().from(TX).update({ category }).in("id", ids.slice(i, i + 200)));
+  }
+}
+
+/* ---------------- Règles apprises ---------------- */
+export async function deleteRule(merchantKey: string): Promise<void> {
+  check(await supabase().from("ff_rules").delete().eq("merchant_key", merchantKey));
+}
+
+export async function setRule(merchantKey: string, category: string): Promise<void> {
+  check(await supabase().from("ff_rules").upsert({ user_id: await userId(), merchant_key: merchantKey, category, updated_at: new Date().toISOString() }));
+}
+
+/* ---------------- Données ---------------- */
+export async function deleteEverything(): Promise<void> {
+  for (const t of [TX, "ff_rules", "ff_budgets", "ff_accounts", "ff_settings"]) {
+    check(await supabase().from(t).delete().not("user_id", "is", null));
+  }
 }

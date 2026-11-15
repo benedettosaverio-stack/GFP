@@ -1,15 +1,22 @@
-import { EXPENSE_RULES, INCOME_RULES, INTERNAL, OWNER_TOKENS, SAVINGS } from "./categories.ts";
+import { EXPENSE_RULES, INCOME_RULES, INTERNAL, SAVINGS, config, ownerTokens } from "./categories.ts";
 import { hash, merchantKey, norm, prettyLabel, round2 } from "./text.ts";
 import type { AccountKind, NewTransaction, ParsedStatement, Rules } from "./types.ts";
 
-/** Catégorie d'une opération : d'abord les choix mémorisés, puis les mots-clés. */
+/**
+ * Catégorie d'une opération, dans l'ordre :
+ * 1. choix mémorisés (tu as corrigé ce marchand)  2. tes règles par mot-clé (réglages)
+ * 3. virement à ton nom  4. ton employeur  5. mots-clés par défaut.
+ */
 export function categorize(raw: string, amount: number, extra: string, rules: Rules = {}): string {
   const learned = rules[merchantKey(raw)];
   if (learned) return learned;
   const label = norm(raw).replace(/-/g, " ");
-  const words = new Set(label.split(/[^A-Z0-9]+/));
-  if (OWNER_TOKENS.some((tokens) => tokens.length > 1 && tokens.every((t) => words.has(t)))) return INTERNAL;
   const full = norm(raw + " " + extra).replace(/-/g, " ");
+  const own = config().keywordRules.find((r) => full.includes(r.keyword.replace(/-/g, " ")));
+  if (own) return own.category;
+  const words = new Set(label.split(/[^A-Z0-9]+/));
+  if (ownerTokens().some((tokens) => tokens.length > 1 && tokens.every((t) => words.has(t)))) return INTERNAL;
+  if (amount > 0 && config().salaryKeywords.some((k) => full.includes(k))) return "Salaire";
   const table = amount > 0 ? INCOME_RULES : EXPENSE_RULES;
   for (const [category, keywords] of table) {
     const haystack = category === INTERNAL || category === SAVINGS ? label : full;

@@ -1,4 +1,5 @@
 import { needsWants, savingsRate } from "@/lib/analysis";
+import { config } from "@/lib/categories";
 import type { MonthSummary } from "@/lib/stats";
 import { C } from "./Charts";
 
@@ -7,18 +8,19 @@ const pct = (n: number) => Math.round(n * 100) + " %";
 
 /** Deux indicateurs : taux d'épargne (anneau, repère 20 %) et répartition 50/30/20. */
 export default function Indicators({ summary }: { summary: MonthSummary }) {
+  const T = config().targets;
   const rate = savingsRate(summary);
   const split = needsWants(summary);
   const R = 38, L = 2 * Math.PI * R;
   const shown = Math.max(0, Math.min(1, rate));
-  const status = rate < 0 ? "neg" : rate < 0.1 ? "warn" : rate >= 0.2 ? "good" : "ok";
-  const verdict = { neg: "Dépenses au-dessus des rentrées", warn: "Sous le seuil de 10 %", ok: "Correct, vise 20 %", good: "Au-dessus du repère de 20 %" }[status];
+  const status = rate < 0 ? "neg" : rate < 0.1 ? "warn" : rate >= T.savings ? "good" : "ok";
+  const verdict = { neg: "Dépenses au-dessus des rentrées", warn: "Sous le seuil de 10 %", ok: `Ton objectif : ${pct(T.savings)}`, good: `Objectif de ${pct(T.savings)} atteint` }[status];
 
   const inc = Math.max(split.income, 1);
   const parts: [string, number, string, number][] = [
-    ["Besoins", split.needs, C.needs, 0.5],
-    ["Envies", split.wants, C.wants, 0.3],
-    ["Reste", Math.max(0, split.rest), C.rest, 0.2],
+    ["Besoins", split.needs, C.needs, T.needs],
+    ["Envies", split.wants, C.wants, T.wants],
+    ["Reste", Math.max(0, split.rest), C.rest, Math.max(0, 1 - T.needs - T.wants)],
   ];
   const total = parts.reduce((a, p) => a + p[1], 0) || 1;
 
@@ -30,7 +32,7 @@ export default function Indicators({ summary }: { summary: MonthSummary }) {
         <svg viewBox="0 0 96 96" className="ring" role="img" aria-label={`Taux d'épargne ${pct(rate)}`}>
           <circle cx="48" cy="48" r={R} className="ring-track" />
           <circle cx="48" cy="48" r={R} className={`ring-val ${status}`} strokeDasharray={`${shown * L} ${L}`} transform="rotate(-90 48 48)" />
-          <line x1="48" y1={48 - R - 6} x2="48" y2={48 - R + 6} transform={`rotate(${0.2 * 360} 48 48)`} className="ring-mark" />
+          <line x1="48" y1={48 - R - 6} x2="48" y2={48 - R + 6} transform={`rotate(${T.savings * 360} 48 48)`} className="ring-mark" />
         </svg>
         <div>
           <p className="ring-value num">{pct(rate)}</p>

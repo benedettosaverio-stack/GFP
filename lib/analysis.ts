@@ -1,16 +1,11 @@
-import { EXPENSE_CATEGORIES, isExpense } from "./categories.ts";
+import { config, expenseCategories, isExpense, isNeed } from "./categories.ts";
 import { myAmount, summarize, type MonthSummary, type Shares } from "./stats.ts";
 import { merchantKey, shiftMonth } from "./text.ts";
 import type { Budgets, Transaction } from "./types.ts";
 
 type Tx = Pick<Transaction, "date" | "amount" | "category" | "account" | "raw" | "label">;
 
-/** Dépenses incompressibles (besoins) ; le reste des dépenses = envies. Repère 50/30/20. */
-export const NEEDS = new Set([
-  "Logement & charges", "Courses", "Voiture – financement", "Carburant & péages",
-  "Entretien véhicule", "Assurances", "Santé",
-]);
-
+/** Les catégories « besoins » se règlent dans Réglages → Catégories ; le reste des dépenses = envies. */
 const inMonth = (txs: Tx[], m: string) => txs.filter((t) => t.date.startsWith(m));
 const round10 = (n: number) => Math.ceil(n / 10) * 10;
 const fmt = (n: number) => Math.round(n).toLocaleString("fr-FR") + " €";
@@ -46,7 +41,7 @@ export type Split = { income: number; needs: number; wants: number; rest: number
 /** Répartition des rentrées : besoins / envies / ce qui reste (épargné ou disponible). */
 export function needsWants(s: MonthSummary): Split {
   let needs = 0, wants = 0;
-  for (const [c, v] of Object.entries(s.byCategory)) (NEEDS.has(c) ? (needs += v) : (wants += v));
+  for (const [c, v] of Object.entries(s.byCategory)) (isNeed(c) ? (needs += v) : (wants += v));
   return { income: s.income, needs: Math.max(0, needs), wants: Math.max(0, wants), rest: s.income - needs - wants };
 }
 
@@ -69,6 +64,8 @@ export function advise(txs: Tx[], month: string, shares: Shares, budgets: Budget
   const out: (Advice & { w: number })[] = [];
   if (!cur.length) return [];
 
+  const T = config().targets;
+  const P = (x: number) => Math.round(x * 100) + " %";
   // 1. Taux d'épargne
   const rate = savingsRate(s);
   if (s.income > 0) {
@@ -77,18 +74,21 @@ export function advise(txs: Tx[], month: string, shares: Shares, budgets: Budget
     } else if (rate < 0.1) {
       const gap = 0.1 * s.income - (s.income - s.spent);
       out.push({ w: 80, tone: "warn", title: `Taux d'épargne de ${Math.round(rate * 100)} %`, text: `Vise au moins 10 % de tes rentrées : il manque ${fmt(gap)} ce mois-ci pour y arriver.` });
-    } else if (rate >= 0.2) {
-      out.push({ w: 30, tone: "good", title: `${Math.round(rate * 100)} % de tes rentrées non dépensés`, text: `Au-dessus du repère de 20 %. Si ce n'est pas déjà fait, programme un virement automatique vers ton épargne dès le jour de paie : ce qui part tout seul ne se dépense pas.` });
+    } else if (rate >= T.savings) {
+      out.push({ w: 30, tone: "good", title: `${Math.round(rate * 100)} % de tes rentrées non dépensés`, text: `Au-dessus de ton objectif de ${P(T.savings)}. Si ce n'est pas déjà fait, programme un virement automatique vers ton épargne dès le jour de paie : ce qui part tout seul ne se dépense pas.` });
     } else {
-      out.push({ w: 40, tone: "tip", title: `Taux d'épargne de ${Math.round(rate * 100)} %`, text: `Correct, le repère courant est 20 %. Il te manquerait ${fmt(0.2 * s.income - (s.income - s.spent))} par mois pour l'atteindre.` });
+      out.push({ w: 40, tone: "tip", title: `Taux d'épargne de ${Math.round(rate * 100)} %`, text: `Ton objectif est de ${P(T.savings)} : il te manquerait ${fmt(T.savings * s.income - (s.income - s.spent))} par mois pour l'atteindre.` });
     }
   }
 
-  // 2. Envies vs repère 30 %
+  // 2. Envies et besoins vs tes repères
   const split = needsWants(s);
-  if (s.income > 0 && split.wants / s.income > 0.3) {
-    const excess = split.wants - 0.3 * s.income;
-    out.push({ w: 70, tone: "warn", title: `Les envies pèsent ${Math.round((split.wants / s.income) * 100)} % de tes rentrées`, text: `Le repère 50/30/20 conseille 30 % maximum, soit ${fmt(0.3 * s.income)}. Ramener tes envies à ce niveau libérerait ${fmt(excess)} par mois.` });
+  if (s.income > 0 && split.wants / s.income > T.wants) {
+    const excess = split.wants - T.wants * s.income;
+    out.push({ w: 70, tone: "warn", title: `Les envies pèsent ${P(split.wants / s.income)} de tes rentrées`, text: `Ton repère est ${P(T.wants)} maximum, soit ${fmt(T.wants * s.income)}. Ramener tes envies à ce niveau libérerait ${fmt(excess)} par mois.` });
+  }
+  if (s.income > 0 && split.needs / s.income > T.needs) {
+    out.push({ w: 68, tone: "warn", title: `Les besoins pèsent ${P(split.needs / s.income)} de tes rentrées`, text: `Au-dessus de ton repère de ${P(T.needs)}. Ce sont des charges fixes : c'est en renégociant (assurance, énergie, forfait) qu'on les fait baisser.` });
   }
 
   // 3. Achats répétés chez un même marchand
@@ -145,9 +145,9 @@ export function advise(txs: Tx[], month: string, shares: Shares, budgets: Budget
   if (!Object.keys(budgets).length) {
     const months = [month, ...prevMonths];
     const proposal: Budgets = {};
-    for (const c of EXPENSE_CATEGORIES) {
+    for (const c of expenseCategories()) {
       const mean = months.reduce((acc, m) => acc + (summarize(inMonth(txs, m), shares).byCategory[c] ?? 0), 0) / months.length;
-      if (mean >= 20) proposal[c] = round10(NEEDS.has(c) ? mean : mean * 0.85);
+      if (mean >= 20) proposal[c] = round10(isNeed(c) ? mean : mean * 0.85);
     }
     if (Object.keys(proposal).length) {
       const total = Object.values(proposal).reduce((a, b) => a + b, 0);

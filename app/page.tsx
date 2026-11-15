@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import AuthScreen from "@/components/AuthScreen";
-import Dashboard from "@/components/Dashboard";
+import { AppProvider } from "@/components/app/store";
+import Shell from "@/components/app/Shell";
 
 export default function Home() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -17,5 +18,9 @@ export default function Home() {
 
   if (session === undefined) return <div className="empty">Chargement…</div>;
   if (!session) return <AuthScreen />;
-  return <Dashboard session={session} />;
+  return (
+    <AppProvider session={session}>
+      <Shell />
+    </AppProvider>
+  );
 }

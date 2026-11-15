@@ -94,7 +94,10 @@ export function monthLabel(key: string): string {
   return new Date(y, m - 1, 1).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 }
 
-export function eur(n: number, digits = 2): string {
+let SHOW_CENTS = true;
+export const setShowCents = (v: boolean) => { SHOW_CENTS = v; };
+
+export function eur(n: number, digits = SHOW_CENTS ? 2 : 0): string {
   const v = Math.abs(n).toLocaleString("fr-FR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
   return (n < 0 ? "−" : "") + v + " €";
 }
