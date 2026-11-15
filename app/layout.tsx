@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "Importe ton relevé, tes dépenses se trient toutes seules.",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, title: "GFP", statusBarStyle: "default" },
-  icons: { icon: "/favicon.ico", apple: "/icon-apple-180.png" },
+  icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }, { url: "/favicon.ico" }], apple: "/icon-apple-180.png" },
 };
 
 export const viewport: Viewport = {

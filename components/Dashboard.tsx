@@ -16,6 +16,7 @@ import AccountPicker from "./AccountPicker";
 import AccountsCard from "./AccountsCard";
 import Indicators from "./Indicators";
 import Coach from "./Coach";
+import { Mark } from "./Logo";
 import { PaceChart, TrendChart } from "./Charts";
 
 type Pending = { fileName: string; statement: ParsedStatement };
@@ -181,7 +182,7 @@ export default function Dashboard({ session }: { session: Session }) {
   return (
     <main className="wrap">
       <header className="top">
-        <h1 className="month">{month ? monthLabel(month) : "GFP"}</h1>
+        <h1 className="month"><Mark size={22} />{month ? monthLabel(month) : "GFP"}</h1>
         {months.length > 1 && (
           <div className="nav">
             <button onClick={() => go(-1)} disabled={idx <= 0} aria-label="Mois précédent">‹</button>

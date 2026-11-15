@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { Mark } from "./Logo";
 
 export default function AuthScreen() {
   const [mode, setMode] = useState<"in" | "up">("in");
@@ -26,6 +27,7 @@ export default function AuthScreen() {
 
   return (
     <main className="auth">
+      <Mark size={56} />
       <h1>GFP</h1>
       <p>Importe ton relevé, tes dépenses se trient toutes seules.</p>
       <form onSubmit={submit}>

@@ -42,7 +42,7 @@ button { cursor: pointer; }
 
 /* En-tête : le mois */
 .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.top .month { font-size: 17px; font-weight: 600; text-transform: capitalize; letter-spacing: -0.01em; margin: 0; }
+.top .month { font-size: 17px; font-weight: 600; text-transform: capitalize; letter-spacing: -0.01em; margin: 0; display: flex; align-items: center; gap: 10px; }
 .nav { display: flex; gap: 4px; }
 .nav button {
   width: 34px; height: 34px; border-radius: 50%; border: 0; background: transparent;
@@ -177,6 +177,7 @@ button.fact:hover, button.fact.on { text-decoration-color: currentColor; }
 
 /* Connexion */
 .auth { max-width: 360px; margin: 16vh auto 0; padding: 0 24px; }
+.auth svg { display: block; margin: 0 0 18px -4px; }
 .auth h1 { font-size: 56px; font-weight: 300; letter-spacing: -0.05em; margin: 0; line-height: 1; }
 .auth p { color: var(--mute); margin: 12px 0 32px; }
 .auth form { display: grid; gap: 10px; }
@@ -240,3 +241,5 @@ button.fact:hover, button.fact.on { text-decoration-color: currentColor; }
 .coach p { margin: 4px 0 0; color: var(--ink-2); max-width: 58ch; }
 .pill { margin-top: 10px; border: 1px solid var(--ink); background: var(--paper); border-radius: 999px; padding: 7px 14px; font-size: 13.5px; font-weight: 500; }
 .pill:hover { background: var(--ink); color: var(--paper); }
+
+.logo { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: -0.01em; }
