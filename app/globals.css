@@ -32,6 +32,14 @@ button { cursor: pointer; }
 
 .wrap { max-width: 520px; margin: 0 auto; padding: max(28px, env(safe-area-inset-top)) 24px 140px; }
 
+/* Grand écran (Mac) : deux colonnes */
+@media (min-width: 1000px) {
+  .wrap { max-width: 1180px; padding: 40px 48px 140px; }
+  .grid { display: grid; grid-template-columns: minmax(340px, 400px) minmax(0, 1fr); gap: 0 88px; align-items: start; }
+  .col-right .section.first { margin-top: 44px; }
+  .amount { font-size: 84px; }
+}
+
 /* En-tête : le mois */
 .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .top .month { font-size: 17px; font-weight: 600; text-transform: capitalize; letter-spacing: -0.01em; margin: 0; }
@@ -178,3 +186,57 @@ button.fact:hover, button.fact.on { text-decoration-color: currentColor; }
 .auth .switch { margin-top: 18px; text-align: center; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Graphiques : traits fins, grille discrète, texte en encre */
+.chart { margin: 0; }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--ink-2); margin-bottom: 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i, .tip i, .split-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+.plot { position: relative; }
+.plot svg { width: 100%; height: auto; display: block; overflow: visible; }
+.grid line, line.grid { stroke: var(--line); stroke-width: 1; }
+.tick { font-size: 11px; fill: var(--mute); font-variant-numeric: tabular-nums; }
+.tick.strong { fill: var(--ink); font-weight: 600; }
+.endlabel { font-size: 12px; fill: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.cross { stroke: var(--ink-2); stroke-width: 1; opacity: 0.35; }
+.tip {
+  position: absolute; top: 0; transform: translate(-50%, -100%); pointer-events: none; z-index: 2;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+  box-shadow: 0 6px 18px rgba(28, 29, 33, 0.08); font-size: 12.5px; display: grid; gap: 3px; white-space: nowrap;
+}
+.tip span { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.chart figcaption { font-size: 13px; color: var(--mute); margin-top: 8px; }
+
+/* Santé du mois */
+.ring-row { display: flex; align-items: center; gap: 18px; }
+.ring { width: 88px; height: 88px; flex: none; }
+.ring-track { fill: none; stroke: var(--line); stroke-width: 8; }
+.ring-val { fill: none; stroke-width: 8; stroke-linecap: round; stroke: #1baf7a; transition: stroke-dasharray .6s ease; }
+.ring-val.warn, .ring-val.neg { stroke: var(--alert); }
+.ring-val.ok { stroke: #2a78d6; }
+.ring-mark { stroke: var(--ink); stroke-width: 2; }
+.ring-value { font-size: 34px; font-weight: 300; letter-spacing: -0.03em; margin: 0; line-height: 1; }
+.ring-label { margin: 4px 0 0; color: var(--ink-2); font-size: 14px; }
+.verdict { margin: 6px 0 0; font-size: 13px; font-weight: 500; }
+.verdict.good { color: var(--pos); }
+.verdict.ok { color: var(--ink-2); }
+.verdict.warn, .verdict.neg { color: var(--alert); }
+.split { margin-top: 28px; }
+.split-title { margin: 0 0 10px; font-size: 14px; color: var(--ink-2); }
+.split .bar { display: flex; gap: 2px; height: 12px; border-radius: 6px; overflow: hidden; background: var(--line); }
+.split .bar i { display: block; height: 100%; }
+.split-legend { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 6px; font-size: 13.5px; }
+.split-legend li { display: grid; grid-template-columns: 10px 64px 48px 1fr; align-items: center; gap: 10px; }
+.split-legend b { font-weight: 600; text-align: right; }
+
+/* Conseils */
+.coach { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; }
+.coach li { padding-left: 14px; border-left: 2px solid var(--line); }
+.coach li[data-tone="warn"] { border-left-color: var(--alert); }
+.coach li[data-tone="good"] { border-left-color: #1baf7a; }
+.coach li[data-tone="tip"] { border-left-color: #2a78d6; }
+.coach .tone { display: block; font-size: 12px; color: var(--mute); margin-bottom: 2px; }
+.coach b { font-weight: 600; display: block; }
+.coach p { margin: 4px 0 0; color: var(--ink-2); max-width: 58ch; }
+.pill { margin-top: 10px; border: 1px solid var(--ink); background: var(--paper); border-radius: 999px; padding: 7px 14px; font-size: 13.5px; font-weight: 500; }
+.pill:hover { background: var(--ink); color: var(--paper); }

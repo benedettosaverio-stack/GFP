@@ -4,7 +4,8 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { deleteAccount, loadAccounts, loadBudgets, loadRules, loadTransactions, recategorize, saveAccount, setBudget } from "@/lib/db";
 import { importStatement, readStatement } from "@/lib/import";
-import { insights, summarize, type Shares } from "@/lib/stats";
+import { summarize, type Shares } from "@/lib/stats";
+import { advise, cumulative, monthlySeries } from "@/lib/analysis";
 import { merchantKey, monthLabel } from "@/lib/text";
 import type { Account, Budgets, ParsedStatement, Rules, Transaction } from "@/lib/types";
 import SummaryCard, { type Filter } from "./SummaryCard";
@@ -13,6 +14,9 @@ import TransactionList from "./TransactionList";
 import ImportBar from "./ImportBar";
 import AccountPicker from "./AccountPicker";
 import AccountsCard from "./AccountsCard";
+import Indicators from "./Indicators";
+import Coach from "./Coach";
+import { PaceChart, TrendChart } from "./Charts";
 
 type Pending = { fileName: string; statement: ParsedStatement };
 
@@ -66,7 +70,19 @@ export default function Dashboard({ session }: { session: Session }) {
     const p = months[idx - 1];
     return p ? summarize((txs ?? []).filter((t) => t.date.startsWith(p)), shares) : null;
   }, [months, idx, txs, shares]);
-  const tips = useMemo(() => insights(monthTxs, summary, previous, budgets, shares), [monthTxs, summary, previous, budgets, shares]);
+  const advice = useMemo(() => (month && txs ? advise(txs, month, shares, budgets) : []), [txs, month, shares, budgets]);
+  const series = useMemo(() => (month && txs ? monthlySeries(txs, month, shares) : []), [txs, month, shares]);
+  const pace = useMemo(() => {
+    if (!month || !txs) return null;
+    const prevKey = months[idx - 1];
+    const now = new Date();
+    const isCurrent = month === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    return {
+      current: cumulative(txs, month, shares),
+      previous: prevKey ? cumulative(txs, prevKey, shares) : null,
+      today: isCurrent ? now.getDate() : null,
+    };
+  }, [txs, month, months, idx, shares]);
   const hasRevolut = monthTxs.some((t) => t.source === "Revolut");
   const counts = useMemo(() => (txs ?? []).reduce<Record<string, number>>((c, t) => ((c[t.account] = (c[t.account] ?? 0) + 1), c), {}), [txs]);
   const labels = useMemo(() => Object.fromEntries(accounts.map((a) => [a.key, a.label])), [accounts]);
@@ -144,6 +160,16 @@ export default function Dashboard({ session }: { session: Session }) {
     }
   }
 
+  async function onApplyBudgets(b: Budgets) {
+    setBudgets({ ...budgets, ...b });
+    try {
+      for (const [c, v] of Object.entries(b)) await setBudget(c, v);
+      notify(Object.keys(b).length > 1 ? `${Object.keys(b).length} budgets enregistrés` : "Budget enregistré");
+    } catch (e) {
+      notify("Budgets non enregistrés : " + (e as Error).message);
+    }
+  }
+
   async function onBudget(category: string, amount: number | null) {
     const next = { ...budgets };
     if (amount && amount > 0) next[category] = amount; else delete next[category];
@@ -172,31 +198,40 @@ export default function Dashboard({ session }: { session: Session }) {
         <div className="empty">
           <b>Importe ton premier relevé</b>
           Le PDF de ta banque ou un export CSV (Revolut…). Tes dépenses se rangent toutes seules par catégorie.
+          <p className="signout">
+            Connecté avec {session.user.email}. <button className="link" onClick={() => supabase().auth.signOut()}>Se déconnecter</button>
+          </p>
         </div>
       ) : (
-        <>
-          <SummaryCard summary={summary} filter={filter} onFilter={setFilter} hasRevolut={hasRevolut} />
-          {tips.length > 0 && (
-            <section className="section">
-              <div className="section-title"><h2>À retenir</h2></div>
-              <ul className="notes">
-                {tips.map((t, i) => <li key={i} className={t.icon === "⚠️" ? "alert" : ""}>{t.text}</li>)}
-              </ul>
+        <div className="grid">
+          <div className="col-left">
+            <SummaryCard summary={summary} filter={filter} onFilter={setFilter} hasRevolut={hasRevolut} />
+            <Indicators summary={summary} />
+            <Coach items={advice} onApply={onApplyBudgets} />
+          </div>
+          <div className="col-right">
+            <section className="section first">
+              <div className="section-title"><h2>Évolution</h2></div>
+              <TrendChart data={series} current={month} onPick={(m) => { setMonth(m); setFilter(null); }} />
             </section>
-          )}
-          <section className="section">
-            <div className="section-title"><h2>Par catégorie</h2></div>
-            <CategoryBreakdown summary={summary} budgets={budgets} filter={filter} onFilter={setFilter} onBudget={onBudget} />
-          </section>
-          <TransactionList txs={monthTxs} shares={shares} labels={labels} filter={filter} onClearFilter={() => setFilter(null)} onRecategorize={onRecategorize} />
-        </>
+            {pace && (
+              <section className="section">
+                <div className="section-title"><h2>Rythme de dépense</h2></div>
+                <PaceChart month={month} current={pace.current} previous={pace.previous} today={pace.today} />
+              </section>
+            )}
+            <section className="section">
+              <div className="section-title"><h2>Par catégorie</h2></div>
+              <CategoryBreakdown summary={summary} budgets={budgets} filter={filter} onFilter={setFilter} onBudget={onBudget} />
+            </section>
+            <TransactionList txs={monthTxs} shares={shares} labels={labels} filter={filter} onClearFilter={() => setFilter(null)} onRecategorize={onRecategorize} />
+            <AccountsCard accounts={accounts} counts={counts} onSave={onSaveAccount} onDelete={onDeleteAccount} />
+            <p className="signout">
+              Connecté avec {session.user.email}. <button className="link" onClick={() => supabase().auth.signOut()}>Se déconnecter</button>
+            </p>
+          </div>
+        </div>
       )}
-
-      <AccountsCard accounts={accounts} counts={counts} onSave={onSaveAccount} onDelete={onDeleteAccount} />
-
-      <p className="signout">
-        Connecté avec {session.user.email}. <button className="link" onClick={() => supabase().auth.signOut()}>Se déconnecter</button>
-      </p>
 
       <ImportBar busy={busy || queue.length > 0} onFiles={onImport} />
       {queue[0] && (
