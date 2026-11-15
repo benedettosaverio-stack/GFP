@@ -17,7 +17,7 @@ const provider = (): Provider | null => {
 const DEFAULT_MODEL: Record<Provider, string> = {
   mistral: "mistral-small-latest",
   groq: "openai/gpt-oss-120b",
-  gemini: "gemini-3.8-flash",
+  gemini: "gemini-3.5-flash-lite",
   anthropic: "claude-haiku-5-5",
 };
 /** Fournisseurs compatibles « chat completions » (format OpenAI). */
@@ -75,7 +75,7 @@ async function ask(system: string, messages: Msg[], maxTokens: number, json = fa
         body: JSON.stringify({
           model: model(p), max_tokens: maxTokens,
           messages: [{ role: "system", content: system }, ...messages],
-          ...(p === "gemini" ? { reasoning_effort: "low" } : { temperature: 0.3 }),
+          ...(p === "gemini" ? { reasoning_effort: "minimal" } : { temperature: 0.3 }),
           ...(p === "groq" ? { reasoning_effort: "low" } : {}),
           ...(json ? { response_format: { type: "json_object" } } : {}),
         }),
