@@ -4,17 +4,29 @@ import { createClient } from "@supabase/supabase-js";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-/** Fournisseur : AI_PROVIDER, sinon la première clé trouvée (Mistral, puis Anthropic). */
-type Provider = "mistral" | "anthropic";
+/** Fournisseur : AI_PROVIDER, sinon la première clé trouvée. */
+type Provider = "mistral" | "groq" | "gemini" | "anthropic";
+const KEYS: Record<Provider, string> = { mistral: "MISTRAL_API_KEY", groq: "GROQ_API_KEY", gemini: "GEMINI_API_KEY", anthropic: "ANTHROPIC_API_KEY" };
+const ORDER: Provider[] = ["groq", "gemini", "mistral", "anthropic"];
 const provider = (): Provider | null => {
   const forced = process.env.AI_PROVIDER as Provider | undefined;
-  if (forced === "mistral" && process.env.MISTRAL_API_KEY) return "mistral";
-  if (forced === "anthropic" && process.env.ANTHROPIC_API_KEY) return "anthropic";
-  if (process.env.MISTRAL_API_KEY) return "mistral";
-  if (process.env.ANTHROPIC_API_KEY) return "anthropic";
-  return null;
+  if (forced && KEYS[forced] && process.env[KEYS[forced]]) return forced;
+  return ORDER.find((p) => process.env[KEYS[p]]) ?? null;
 };
-const DEFAULT_MODEL: Record<Provider, string> = { mistral: "mistral-small-latest", anthropic: "claude-haiku-5-5" };
+const DEFAULT_MODEL: Record<Provider, string> = {
+  mistral: "mistral-small-latest",
+  groq: "openai/gpt-oss-120b",
+  gemini: "gemini-3.8-flash",
+  anthropic: "claude-haiku-5-5",
+};
+/** Fournisseurs compatibles « chat completions » (format OpenAI). */
+const OPENAI_LIKE: Partial<Record<Provider, string>> = {
+  mistral: "https://api.mistral.ai/v1/chat/completions",
+  groq: "https://api.groq.com/openai/v1/chat/completions",
+  gemini: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+};
+/** Taille max du contexte envoyé (les offres gratuites de Groq ont des quotas de tokens par minute serrés). */
+const CONTEXT_MAX: Record<Provider, number> = { mistral: 120_000, groq: 24_000, gemini: 120_000, anthropic: 120_000 };
 const model = (p: Provider) => process.env.AI_MODEL || DEFAULT_MODEL[p];
 /** Liste d'identifiants Supabase autorisés (séparés par des virgules). Vide = tout utilisateur connecté. */
 const ALLOWED = () => (process.env.AI_ALLOWED_USERS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -39,16 +51,29 @@ const RULES = `Comment lire les données :
 - « Vie commune » = ce qu'il verse au compte joint du couple ; c'est sa dépense pour le foyer. Le détail du compte joint (loyer, courses communes, CAF du foyer) n'entre pas dans son budget perso.
 - Un salaire marqué « compté pour le mois suivant » a été versé fin de mois pour financer le mois d'après.`;
 
+/** Raccourcit le contexte en gardant le début (réglages, synthèse par mois) et les opérations les plus récentes. */
+function fit(context: string, max: number): string {
+  if (context.length <= max) return context;
+  const cut = context.indexOf("\nOpérations depuis");
+  const head = cut > 0 ? context.slice(0, cut) : context.slice(0, max / 2);
+  const room = Math.max(0, max - head.length - 80);
+  const tail = context.slice(-room);
+  return `${head}\n\nOpérations les plus récentes (liste raccourcie) :\n${tail.slice(tail.indexOf("\n") + 1)}`;
+}
+
 /** Un appel au modèle, quel que soit le fournisseur. `json` demande une réponse JSON stricte. */
 async function ask(system: string, messages: Msg[], maxTokens: number, json = false): Promise<string> {
   const p = provider()!;
-  const res = p === "mistral"
-    ? await fetch("https://api.mistral.ai/v1/chat/completions", {
+  const url = OPENAI_LIKE[p];
+  const res = url
+    ? await fetch(url, {
         method: "POST",
-        headers: { Authorization: `Bearer ${process.env.MISTRAL_API_KEY}`, "content-type": "application/json" },
+        headers: { Authorization: `Bearer ${process.env[KEYS[p]]}`, "content-type": "application/json" },
         body: JSON.stringify({
-          model: model(p), max_tokens: maxTokens, temperature: 0.3,
+          model: model(p), max_tokens: maxTokens,
           messages: [{ role: "system", content: system }, ...messages],
+          ...(p === "gemini" ? { reasoning_effort: "low" } : { temperature: 0.3 }),
+          ...(p === "groq" ? { reasoning_effort: "low" } : {}),
           ...(json ? { response_format: { type: "json_object" } } : {}),
         }),
       })
@@ -60,11 +85,11 @@ async function ask(system: string, messages: Msg[], maxTokens: number, json = fa
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     const msg = data?.error?.message ?? data?.message ?? res.statusText;
-    if (res.status === 401) throw new Error(`Clé API refusée : vérifie ${p === "mistral" ? "MISTRAL_API_KEY" : "ANTHROPIC_API_KEY"} dans Vercel.`);
+    if (res.status === 401 || res.status === 403) throw new Error(`Clé API refusée : vérifie ${KEYS[p]} dans Vercel.`);
     if (res.status === 429) throw new Error("Limite de l'offre atteinte pour le moment, réessaie dans une minute.");
     throw new Error(`L'IA n'a pas pu répondre (${res.status}) : ${msg}`);
   }
-  if (p === "mistral") {
+  if (url) {
     const c = data?.choices?.[0]?.message?.content;
     // les modèles « raisonnement » renvoient une liste de morceaux : on garde le texte final
     return (typeof c === "string" ? c : Array.isArray(c) ? c.filter((x: { type: string }) => x.type === "text").map((x: { text: string }) => x.text).join("") : "").trim();
@@ -79,7 +104,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  if (!provider()) return NextResponse.json({ error: "IA non configurée : ajoute MISTRAL_API_KEY dans Vercel." }, { status: 503 });
+  if (!provider()) return NextResponse.json({ error: "IA non configurée : ajoute GROQ_API_KEY ou GEMINI_API_KEY dans Vercel." }, { status: 503 });
 
   const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -117,13 +142,13 @@ Si tu ne sais vraiment pas, mets "Divers" pour une dépense et "Autres revenus" 
     if (body.action === "chat") {
       const messages = body.messages.slice(-12).map((m) => ({ role: m.role, content: String(m.content).slice(0, 4000) }));
       if (!messages.length || messages[messages.length - 1].role !== "user") return NextResponse.json({ error: "Pose une question" }, { status: 400 });
-      const answer = await ask(`${STYLE}\n\n${RULES}\n\nDonnées de l'utilisateur :\n${body.context.slice(0, 120_000)}`, messages, 1200);
+      const answer = await ask(`${STYLE}\n\n${RULES}\n\nDonnées de l'utilisateur :\n${fit(body.context, CONTEXT_MAX[provider()!])}`, messages, 1200);
       return NextResponse.json({ answer });
     }
 
     if (body.action === "review") {
       const answer = await ask(
-        `${STYLE}\n\n${RULES}\n\nDonnées de l'utilisateur :\n${body.context.slice(0, 120_000)}`,
+        `${STYLE}\n\n${RULES}\n\nDonnées de l'utilisateur :\n${fit(body.context, CONTEXT_MAX[provider()!])}`,
         [{ role: "user", content: `Fais le bilan de ${body.month} en 5 à 7 puces maximum : ce qui a changé par rapport aux mois précédents, ce qui va bien, ce qui mérite attention, et une action concrète pour le mois prochain. Commence directement par les puces.` }],
         900,
       );

@@ -288,13 +288,20 @@ function Ai() {
       {!app.aiEnabled && (
         <>
           <h3 className="set-sub">La brancher</h3>
+          <p className="muted small">Deux options gratuites, sans carte bancaire. Choisis-en une :</p>
+          <h3 className="set-sub">Groq (recommandé : n&apos;entraîne pas ses modèles sur tes données)</h3>
           <ol className="steps">
-            <li>Crée un compte gratuit sur console.mistral.ai (email + SMS, pas de carte bancaire) et choisis l&apos;offre gratuite.</li>
-            <li>Dans l&apos;espace Admin, désactive l&apos;utilisation de tes données pour l&apos;entraînement de leurs modèles.</li>
-            <li>Va dans API Keys → Create new key, et copie la clé.</li>
-            <li>Dans Vercel, ouvre le projet finance-flow → Settings → Environment Variables. Ajoute <code>MISTRAL_API_KEY</code> avec ta clé, coche Production, enregistre.</li>
-            <li>Onglet Deployments → les « … » du dernier déploiement → Redeploy.</li>
+            <li>Crée un compte sur console.groq.com (email, Google ou GitHub).</li>
+            <li>Menu API Keys → Create API Key, copie la clé.</li>
+            <li>Dans Vercel → projet finance-flow → Settings → Environment Variables : ajoute <code>GROQ_API_KEY</code>, coche Production, enregistre.</li>
+            <li>Deployments → « … » du dernier déploiement → Redeploy.</li>
           </ol>
+          <h3 className="set-sub">Google Gemini (quotas plus larges)</h3>
+          <ol className="steps">
+            <li>Va sur aistudio.google.com avec ton compte Google → Get API key → Create API key.</li>
+            <li>Dans Vercel, ajoute <code>GEMINI_API_KEY</code> de la même façon, puis Redeploy.</li>
+          </ol>
+          <p className="foot">Attention : en gratuit, Google peut utiliser tes requêtes pour améliorer ses modèles.</p>
           <p className="foot">La clé reste sur le serveur : elle n&apos;est jamais dans le code public ni dans ton navigateur.</p>
         </>
       )}
