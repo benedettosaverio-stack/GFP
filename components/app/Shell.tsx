@@ -9,13 +9,15 @@ import Operations from "./Operations";
 import BudgetsTab from "./BudgetsTab";
 import Analysis from "./Analysis";
 import SettingsTab from "./SettingsTab";
+import VieCommune from "./VieCommune";
 
-export type Tab = "synthese" | "operations" | "budgets" | "analyse" | "reglages";
+export type Tab = "synthese" | "operations" | "budgets" | "commune" | "analyse" | "reglages";
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "synthese", label: "Synthèse", icon: <path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z" /> },
   { id: "operations", label: "Opérations", icon: <path d="M4 6h16M4 12h16M4 18h10" /> },
   { id: "budgets", label: "Budgets", icon: <><circle cx="12" cy="12" r="8" /><path d="M12 4v8l5.5 5.5" /></> },
+  { id: "commune", label: "Vie commune", icon: <><circle cx="9" cy="8" r="3" /><circle cx="16.5" cy="9.5" r="2.5" /><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M14.5 14.3c.6-.2 1.3-.3 2-.3 2.3 0 4 1.5 4.5 4" /></> },
   { id: "analyse", label: "Analyse", icon: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /> },
   { id: "reglages", label: "Réglages", icon: <><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" /></> },
 ];
@@ -106,6 +108,8 @@ export default function Shell() {
             <Operations />
           ) : tab === "budgets" ? (
             <BudgetsTab />
+          ) : tab === "commune" ? (
+            <VieCommune go={go} />
           ) : (
             <Analysis />
           )}

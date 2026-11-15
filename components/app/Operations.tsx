@@ -27,6 +27,7 @@ export default function Operations() {
     if (!opsPreset) return;
     if (opsPreset.category) { setCat(opsPreset.category); setKind("all"); }
     if (opsPreset.kind) { setKind(opsPreset.kind); setCat(""); }
+    if (opsPreset.account) { setAccount(opsPreset.account); setKind("all"); setCat(""); }
     setOpsPreset(null);
   }, [opsPreset, setOpsPreset]);
 
@@ -84,8 +85,9 @@ export default function Operations() {
         <div className="day" key={date}>
           <h3>{dayLabel(date)}{allMonths && ` ${date.slice(0, 4)}`}</h3>
           {items.map((t) => {
-            const dim = t.category === INTERNAL || t.category === SAVINGS;
             const part = app.shares[t.account] ?? 1;
+            const shared = part === 0; // compte joint en mode « Vie commune » : hors de ton budget perso
+            const dim = t.category === INTERNAL || t.category === SAVINGS || shared;
             return (
               <button key={t.id} className={`tx row ${dim ? "dim" : ""}`} onClick={() => setOpen(t)}>
                 <div className="l">
@@ -94,10 +96,11 @@ export default function Operations() {
                     <span className="chip" style={{ background: tint(t.category) }}><span className="dot" style={{ background: colorOf(t.category) }} />{t.category}</span>
                     {app.accounts.length > 1 && <span>{app.labels[t.account] ?? t.account}</span>}
                     {part < 1 && !dim && <span>ta part sur {eur(Math.abs(t.amount))}</span>}
+                    {shared && <span>compte commun</span>}
                   </div>
                 </div>
                 <div className={`a num ${t.amount > 0 && !dim ? "pos" : ""}`}>
-                  {dim ? eur(Math.abs(t.amount)) : (t.amount > 0 ? "+" : "") + eur(myAmount(t, app.shares))}
+                  {shared ? (t.amount > 0 ? "+" : "") + eur(t.amount) : dim ? eur(Math.abs(t.amount)) : (t.amount > 0 ? "+" : "") + eur(myAmount(t, app.shares))}
                 </div>
               </button>
             );

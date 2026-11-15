@@ -79,6 +79,19 @@ function Accounts() {
           </div>
         ))}
       </div>
+      {app.accounts.some((a) => a.kind === "joint") && (
+        <>
+          <h3 className="set-sub">Compte joint dans ton budget</h3>
+          <label className="toggle">
+            <input type="radio" name="joint" checked={app.settings.jointMode === "commune"} onChange={() => app.updateSettings({ jointMode: "commune" }, "Mode Vie commune activé")} />
+            <span>Vie commune (recommandé)<small>Seuls tes virements vers le joint comptent, en une dépense « Vie commune ». Les aides et versements de l&apos;autre titulaire ne faussent plus tes chiffres. Le détail est dans l&apos;onglet Vie commune.</small></span>
+          </label>
+          <label className="toggle">
+            <input type="radio" name="joint" checked={app.settings.jointMode === "part"} onChange={() => app.updateSettings({ jointMode: "part" }, "Mode part du joint activé")} />
+            <span>Ta part de chaque opération<small>Chaque dépense et rentrée du joint compte à hauteur de ta part (ex. 50 %).</small></span>
+          </label>
+        </>
+      )}
       <p className="foot">Changer le type s&apos;applique aux prochains imports. Pour reclasser un relevé déjà importé, supprime le compte puis réimporte-le.</p>
     </>
   );
@@ -241,6 +254,10 @@ function Profile() {
         <input value={names} placeholder="PRÉNOM NOM, NOM PRÉNOM" onChange={(e) => setNames(e.target.value)} onBlur={() => app.updateSettings({ ownerNames: split(names) })} />
         <small>Un virement à ton nom (entre tes comptes, vers le joint) n&apos;est ni une dépense ni une rentrée.</small>
       </label>
+      <label className="field">Prénom de l&apos;autre titulaire du compte joint
+        <input defaultValue={s.partnerName} placeholder="Prénom" onBlur={(e) => e.target.value.trim() !== s.partnerName && app.updateSettings({ partnerName: e.target.value.trim() })} />
+        <small>Affiché dans l&apos;onglet Vie commune.</small>
+      </label>
       <label className="field">Ton employeur sur le relevé
         <input value={salary} placeholder="NOM DE L'EMPLOYEUR" onChange={(e) => setSalary(e.target.value)} onBlur={() => app.updateSettings({ salaryKeywords: split(salary) })} />
         <small>Les virements reçus contenant ce mot sont classés en Salaire.</small>
@@ -265,7 +282,7 @@ function Display() {
       <label className="field">Onglet d&apos;ouverture
         <select value={s.startTab} onChange={(e) => app.updateSettings({ startTab: e.target.value as typeof s.startTab })}>
           <option value="synthese">Synthèse</option><option value="operations">Opérations</option>
-          <option value="budgets">Budgets</option><option value="analyse">Analyse</option>
+          <option value="budgets">Budgets</option><option value="commune">Vie commune</option><option value="analyse">Analyse</option>
         </select>
       </label>
       <label className="toggle">

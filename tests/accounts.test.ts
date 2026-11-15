@@ -32,7 +32,7 @@ test("Revolut export français : sous-comptes ignorés, opérations en attente i
   assert.equal(cat["Recharge sur Apple Pay via *****"], "Virement interne");
   assert.equal(cat["Carrefour"], "Courses");
   assert.equal(cat["Resto Sas Friterie"], "Restos & sorties");
-  assert.equal(cat["Paiement envoyé par CAF DU NORD"], "Autres revenus");
+  assert.equal(cat["Paiement envoyé par CAF DU NORD"], "Aides & allocations");
 });
 
 test("livret : rien n'est dépense ni rentrée, sauf les intérêts ; l'épargne n'est comptée qu'une fois", () => {

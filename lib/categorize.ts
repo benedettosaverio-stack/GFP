@@ -1,4 +1,4 @@
-import { EXPENSE_RULES, INCOME_RULES, INTERNAL, SAVINGS, config, ownerTokens } from "./categories.ts";
+import { EXPENSE_RULES, HOUSEHOLD_INCOME, INCOME_RULES, INTERNAL, SAVINGS, config, ownerTokens } from "./categories.ts";
 import { hash, merchantKey, norm, prettyLabel, round2 } from "./text.ts";
 import type { AccountKind, NewTransaction, ParsedStatement, Rules } from "./types.ts";
 
@@ -28,12 +28,13 @@ export function categorize(raw: string, amount: number, extra: string, rules: Ru
 /**
  * Règle propre au type de compte, appliquée après les règles apprises :
  * - épargne (livret…) : tout est un mouvement entre tes comptes, sauf les intérêts ;
- * - joint : les versements reçus sont des apports (les tiens ou ceux de l'autre titulaire), pas des revenus.
+ * - joint : les versements reçus sont des apports (les tiens ou ceux de l'autre titulaire), pas des revenus,
+ *   sauf les aides du foyer (CAF…) et les remboursements, qui restent des rentrées du compte joint.
  */
 function byAccountKind(category: string, raw: string, amount: number, kind: AccountKind): string {
   const t = norm(raw);
   if (kind === "epargne") return amount > 0 && /INTERET|INTEREST/.test(t) ? "Autres revenus" : INTERNAL;
-  if (kind === "joint" && amount > 0 && category !== "Remboursements") return INTERNAL;
+  if (kind === "joint" && amount > 0 && !HOUSEHOLD_INCOME.includes(category)) return INTERNAL;
   return category;
 }
 

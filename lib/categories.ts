@@ -14,10 +14,16 @@ export const EXPENSE_CATEGORIES = [
   "Loisirs & jeux",
   "Voyages",
   "Cadeaux",
+  "Vie commune",
   "Divers",
 ] as const;
 
-export const INCOME_CATEGORIES = ["Salaire", "Prestas SBSAX / photo", "Remboursements", "Autres revenus"] as const;
+export const INCOME_CATEGORIES = ["Salaire", "Prestas SBSAX / photo", "Aides & allocations", "Remboursements", "Autres revenus"] as const;
+
+/** Ce que tu verses au compte joint : une seule dépense, quel que soit l'usage qu'en fait le couple. */
+export const VIE_COMMUNE = "Vie commune";
+/** Rentrées qui restent des rentrées même sur un compte joint (aides du foyer, remboursements). */
+export const HOUSEHOLD_INCOME = ["Aides & allocations", "Remboursements"];
 
 export const SAVINGS = "Épargne & placements";
 export const INTERNAL = "Virement interne";
@@ -32,7 +38,7 @@ export type Targets = { savings: number; needs: number; wants: number };
 
 export const DEFAULT_NEEDS = [
   "Logement & charges", "Courses", "Voiture – financement", "Carburant & péages",
-  "Entretien véhicule", "Assurances", "Santé",
+  "Entretien véhicule", "Assurances", "Santé", "Vie commune",
 ];
 
 type Config = {
@@ -106,6 +112,8 @@ export const CATEGORY_COLORS: Record<string, string> = {
   Voyages: "#79C2D9",
   Cadeaux: "#E6CF7A",
   Divers: "#B9BCC4",
+  "Vie commune": "#F0A6C9",
+  "Aides & allocations": "#9FD3C7",
   Salaire: "#7CC59A",
   "Prestas SBSAX / photo": "#9AD3A8",
   Remboursements: "#B6DDB0",
@@ -164,6 +172,7 @@ export const INCOME_RULES: [string, string[]][] = [
   ["Autres revenus", ["INTERETS", "INTEREST"]],
   [SAVINGS, ["DE LIVRET", "LIVRET A", "LDDS", "LEP ", "PEL ", "EPARGNE", "INVESTISSEMENT", "ROBO PORTFOLIO", "SAVINGS", "VAULT"]],
   ["Salaire", ["SALAIRE", "PAIE "]],
+  ["Aides & allocations", ["CAF ", "C.A.F", "CNAF", "ALLOCATIONS FAMILIALES", "ALLOC LOGEMENT", "APL ", "PRIME D ACTIVITE", "PRIME ACTIVITE", "FRANCE TRAVAIL", "POLE EMPLOI"]],
   ["Remboursements", ["CPAM", "MUTUELLE", "PRESTATIONS SANTE", "REMB", "REFUND", "REMBOURSEMENT", "AMELI"]],
   ["Prestas SBSAX / photo", ["SBSAX", "PRESTATION", "FACTURE", "MARIAGE", "STRIPE", "SUMUP"]],
 ];

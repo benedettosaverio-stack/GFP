@@ -5,6 +5,7 @@ export type Settings = {
   // Profil bancaire
   ownerNames: string[];
   salaryKeywords: string[];
+  partnerName: string;
   // Tri
   keywordRules: KeywordRule[];
   // Catégories
@@ -19,12 +20,15 @@ export type Settings = {
   privacy: boolean;
   cents: boolean;
   coach: boolean;
-  startTab: "synthese" | "operations" | "budgets" | "analyse";
+  startTab: "synthese" | "operations" | "budgets" | "analyse" | "commune";
+  // Compte joint : « commune » = seuls tes versements comptent (Vie commune) ; « part » = ta part de chaque opération
+  jointMode: "commune" | "part";
 };
 
 export const DEFAULT_SETTINGS: Settings = {
   ownerNames: [],
   salaryKeywords: [],
+  partnerName: "",
   keywordRules: [],
   customCategories: [],
   colors: {},
@@ -36,6 +40,7 @@ export const DEFAULT_SETTINGS: Settings = {
   cents: true,
   coach: true,
   startTab: "synthese",
+  jointMode: "commune",
 };
 
 /** Complète des réglages partiels (anciens enregistrements) avec les valeurs par défaut. */

@@ -7,8 +7,9 @@ import {
 } from "@/lib/db";
 import { importStatement, readStatement } from "@/lib/import";
 import { categorize } from "@/lib/categorize";
-import { configure, INTERNAL } from "@/lib/categories";
+import { configure, HOUSEHOLD_INCOME, INTERNAL } from "@/lib/categories";
 import { summarize, type Shares } from "@/lib/stats";
+import { household, jointLinks, withVieCommune } from "@/lib/household";
 import { merchantKey, setShowCents } from "@/lib/text";
 import { DEFAULT_SETTINGS, type Settings } from "@/lib/settings";
 import type { Account, Budgets, ParsedStatement, Rules, Transaction } from "@/lib/types";
@@ -16,7 +17,7 @@ import type { Account, Budgets, ParsedStatement, Rules, Transaction } from "@/li
 export type Pending = { fileName: string; statement: ParsedStatement };
 
 function useAppState(session: Session) {
-  const [txs, setTxs] = useState<Transaction[] | null>(null);
+  const [rawTxs, setTxs] = useState<Transaction[] | null>(null);
   const [rules, setRules] = useState<Rules>({});
   const [budgets, setBudgets] = useState<Budgets>({});
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -28,7 +29,7 @@ function useAppState(session: Session) {
   const [error, setError] = useState<string | null>(null);
   const [version, setVersion] = useState(0); // force le recalcul après configure()
   // filtre transmis à l'onglet Opérations (ex. clic sur « rentrées » dans la synthèse)
-  const [opsPreset, setOpsPreset] = useState<{ category?: string; kind?: "income" | "savings" | "expense" } | null>(null);
+  const [opsPreset, setOpsPreset] = useState<{ category?: string; kind?: "income" | "savings" | "expense"; account?: string } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const notify = useCallback((msg: string, ms = 3500) => {
@@ -73,9 +74,19 @@ function useAppState(session: Session) {
 
   useEffect(() => { reload(); }, [reload]);
 
-  const months = useMemo(() => [...new Set((txs ?? []).map((t) => t.date.slice(0, 7)))].sort(), [txs]);
-  const shares = useMemo<Shares>(() => Object.fromEntries(accounts.map((a) => [a.key, a.kind === "joint" ? a.share : 1])), [accounts]);
+  const months = useMemo(() => [...new Set((rawTxs ?? []).map((t) => t.date.slice(0, 7)))].sort(), [rawTxs]);
+  const jointKeys = useMemo(() => new Set(accounts.filter((a) => a.kind === "joint").map((a) => a.key)), [accounts]);
+  const commune = settings.jointMode === "commune";
+  // Mode « Vie commune » : le compte joint sort de ton budget perso, tes virements vers lui deviennent une dépense.
+  const shares = useMemo<Shares>(
+    () => Object.fromEntries(accounts.map((a) => [a.key, a.kind === "joint" ? (commune ? 0 : a.share) : 1])),
+    [accounts, commune],
+  );
+  const links = useMemo(() => jointLinks(rawTxs ?? [], jointKeys), [rawTxs, jointKeys]);
+  const txs = useMemo(() => (rawTxs && commune ? withVieCommune(rawTxs, links.mine) : rawTxs), [rawTxs, commune, links]);
   const monthTxs = useMemo(() => (txs ?? []).filter((t) => month && t.date.startsWith(month)), [txs, month]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const home = useMemo(() => household(monthTxs, jointKeys, links.fromMe), [monthTxs, jointKeys, links, version]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const summary = useMemo(() => summarize(monthTxs, shares), [monthTxs, shares, version]);
   const labels = useMemo(() => Object.fromEntries(accounts.map((a) => [a.key, a.label])), [accounts]);
@@ -192,13 +203,18 @@ function useAppState(session: Session) {
 
   /** Re-trie les opérations non corrigées à la main avec les règles actuelles (réglages compris). */
   async function resortAll() {
-    if (!txs) return;
+    if (!rawTxs) return;
     const kinds = Object.fromEntries(accounts.map((a) => [a.key, a.kind]));
     const changes: { id: string; category: string }[] = [];
-    for (const t of txs) {
+    for (const t of rawTxs) {
       if (t.manual) continue;
       if (kinds[t.account] === "epargne" && (t.category === INTERNAL || t.category === "Autres revenus")) continue;
-      if (t.category === INTERNAL && kinds[t.account] === "joint") continue;
+      if (kinds[t.account] === "joint" && t.category === INTERNAL) {
+        // un apport reste un apport, sauf les aides du foyer (CAF…) et remboursements reçus sur le joint
+        const c = categorize(t.raw, t.amount, "", rules);
+        if (t.amount > 0 && HOUSEHOLD_INCOME.includes(c)) changes.push({ id: t.id, category: c });
+        continue;
+      }
       const c = categorize(t.raw, t.amount, "", rules);
       if (c !== t.category) changes.push({ id: t.id, category: c });
     }
@@ -215,7 +231,7 @@ function useAppState(session: Session) {
   }
 
   return {
-    session, txs, rules, budgets, accounts, settings, month, setMonth, months, monthTxs, summary, shares, labels,
+    session, txs, rules, budgets, accounts, settings, month, setMonth, months, monthTxs, summary, shares, labels, jointKeys, home,
     queue, toast, busy, error, version, notify, reload, opsPreset, setOpsPreset,
     importFiles, confirmAccount, skipPending, saveAccount: saveAccountAction, deleteAccount: deleteAccountAction,
     recategorizeTx, renameTx, deleteTx, setBudget: setBudgetAction, applyBudgets, updateSettings, removeRule, changeRule,
