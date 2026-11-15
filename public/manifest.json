@@ -1,6 +1,6 @@
 {
-  "name": "FinanceFlow",
-  "short_name": "FinanceFlow",
+  "name": "GFP",
+  "short_name": "GFP",
   "description": "Importe ton relevé, tes dépenses se trient toutes seules.",
   "start_url": "/",
   "display": "standalone",

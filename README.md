@@ -1,4 +1,4 @@
-# FinanceFlow — suivi des dépenses sans reporting
+# GFP — suivi des dépenses sans reporting
 
 Tu importes ton relevé bancaire (PDF ou CSV), l'appli trie tout toute seule et te sort le bilan du mois.
 
@@ -36,7 +36,7 @@ Dans ton projet Supabase → **SQL Editor** → colle le contenu de `supabase/mi
 Ça crée 3 tables préfixées `ff_` (opérations, règles apprises, budgets), protégées par RLS : chaque utilisateur ne voit que ses données.
 
 ### 2. Vercel
-**Add New → Project** → importe le dépôt `FinanceFlow` → ajoute les variables d'environnement :
+**Add New → Project** → importe le dépôt `GFP` → ajoute les variables d'environnement :
 
 | Variable | Valeur |
 | --- | --- |

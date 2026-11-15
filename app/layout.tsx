@@ -2,10 +2,10 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "FinanceFlow — Mes dépenses",
+  title: "GFP — Mes dépenses",
   description: "Importe ton relevé, tes dépenses se trient toutes seules.",
   manifest: "/manifest.json",
-  appleWebApp: { capable: true, title: "FinanceFlow", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "GFP", statusBarStyle: "default" },
   icons: { icon: "/favicon.ico", apple: "/icon-apple-180.png" },
 };
 

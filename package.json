@@ -1,5 +1,5 @@
 {
-  "name": "financeflow",
+  "name": "gfp",
   "version": "1.0.0",
   "private": true,
   "description": "Suivi automatique des dépenses : import de relevés bancaires, catégorisation, budgets (Next.js + Supabase)",

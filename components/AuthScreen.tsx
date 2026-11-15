@@ -26,7 +26,7 @@ export default function AuthScreen() {
 
   return (
     <main className="auth">
-      <h1>FinanceFlow</h1>
+      <h1>GFP</h1>
       <p>Importe ton relevé, tes dépenses se trient toutes seules.</p>
       <form onSubmit={submit}>
         <input type="email" required autoComplete="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />

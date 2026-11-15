@@ -1,4 +1,4 @@
--- FinanceFlow — suivi des dépenses
+-- GFP — suivi des dépenses
 -- À coller dans Supabase → SQL Editor → Run (une seule fois).
 -- Tables préfixées "ff_" pour cohabiter avec les tables existantes du projet.
 
