@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+export const dynamic = "force-dynamic";
 
 /** Fournisseur : AI_PROVIDER, sinon la première clé trouvée. */
 type Provider = "mistral" | "groq" | "gemini" | "anthropic";
@@ -26,7 +27,7 @@ const OPENAI_LIKE: Partial<Record<Provider, string>> = {
   gemini: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
 };
 /** Taille max du contexte envoyé (les offres gratuites de Groq ont des quotas de tokens par minute serrés). */
-const CONTEXT_MAX: Record<Provider, number> = { mistral: 120_000, groq: 14_000, gemini: 120_000, anthropic: 120_000 };
+const CONTEXT_MAX: Record<Provider, number> = { mistral: 60_000, groq: 14_000, gemini: 45_000, anthropic: 120_000 };
 const model = (p: Provider) => process.env.AI_MODEL || DEFAULT_MODEL[p];
 /** Liste d'identifiants Supabase autorisés (séparés par des virgules). Vide = tout utilisateur connecté. */
 const ALLOWED = () => (process.env.AI_ALLOWED_USERS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -65,9 +66,11 @@ function fit(context: string, max: number): string {
 async function ask(system: string, messages: Msg[], maxTokens: number, json = false): Promise<string> {
   const p = provider()!;
   const url = OPENAI_LIKE[p];
+  const t0 = Date.now();
   const res = url
     ? await fetch(url, {
         method: "POST",
+        signal: AbortSignal.timeout(48_000),
         headers: { Authorization: `Bearer ${process.env[KEYS[p]]}`, "content-type": "application/json" },
         body: JSON.stringify({
           model: model(p), max_tokens: maxTokens,
@@ -79,11 +82,14 @@ async function ask(system: string, messages: Msg[], maxTokens: number, json = fa
       })
     : await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
+        signal: AbortSignal.timeout(48_000),
         headers: { "x-api-key": process.env.ANTHROPIC_API_KEY!, "anthropic-version": "2023-06-01", "content-type": "application/json" },
         body: JSON.stringify({ model: model(p), max_tokens: maxTokens, system, messages }),
       });
   const data = await res.json().catch(() => null);
+  console.log(`[ai] ${p} ${model(p)} → ${res.status} en ${Date.now() - t0} ms`);
   if (!res.ok) {
+    console.error("[ai] erreur fournisseur", res.status, JSON.stringify(data)?.slice(0, 500));
     const msg = data?.error?.message ?? data?.message ?? res.statusText;
     if (res.status === 401 || res.status === 403) throw new Error(`Clé API refusée : vérifie ${KEYS[p]} dans Vercel.`);
     if (res.status === 429) throw new Error("Limite de l'offre atteinte pour le moment, réessaie dans une minute.");
@@ -157,6 +163,11 @@ Si tu ne sais vraiment pas, mets "Divers" pour une dépense et "Autres revenus" 
 
     return NextResponse.json({ error: "Action inconnue" }, { status: 400 });
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 502 });
+    const err = e as Error;
+    console.error("[ai] échec", body.action, err.name, err.message);
+    if (err.name === "TimeoutError" || err.name === "AbortError") {
+      return NextResponse.json({ error: "L'IA met trop de temps à répondre. Réessaie dans un instant, ou pose une question plus courte." }, { status: 504 });
+    }
+    return NextResponse.json({ error: err.message }, { status: 502 });
   }
 }
