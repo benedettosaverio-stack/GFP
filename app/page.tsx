@@ -1,5 +1,21 @@
-import FinanceFlow from '@/components/FinanceFlow'
+"use client";
+import { useEffect, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
+import AuthScreen from "@/components/AuthScreen";
+import Dashboard from "@/components/Dashboard";
 
 export default function Home() {
-  return <FinanceFlow />
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+
+  useEffect(() => {
+    const sb = supabase();
+    sb.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data } = sb.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  if (session === undefined) return <div className="empty">Chargement…</div>;
+  if (!session) return <AuthScreen />;
+  return <Dashboard session={session} />;
 }
